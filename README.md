@@ -9,5 +9,5 @@
 -   Xeyranáe Mngomezulu
 
 ## Important Links
--   [Link To Deployed Site](url)
+-   [Link To Deployed Site](https://witty-stone-03009b61e.1.azurestaticapps.net/)
 -   [Video Demonstration](url)
