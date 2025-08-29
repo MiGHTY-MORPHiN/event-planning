@@ -1,5 +1,7 @@
 // src/vendor/VendorProfile.jsx
-import React from "react";
+
+import {useNavigate} from "react-router-dom";
+
 import {
   Users,
   Star,
@@ -15,6 +17,13 @@ import {
 import "./vendorProfile.css";
 
 const VendorProfile = () => {
+
+  const navigate = useNavigate();
+
+  const navProfileEdit=()=>{
+    navigate('/vendor/vendor-edit-profile');
+  }
+
   return (
     <div className="vendor-profile">
       {/* Header Section */}
@@ -23,7 +32,7 @@ const VendorProfile = () => {
           <h1 className="profile-title">Vendor Profile</h1>
           <p className="profile-subtitle">Manage your business profile and services</p>
         </div>
-        <button className="edit-profile-btn">
+        <button className="edit-profile-btn" onClick={navProfileEdit}>
           <Edit size={16} />
           Edit Profile
         </button>
