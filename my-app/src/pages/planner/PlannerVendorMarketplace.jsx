@@ -76,3 +76,4 @@ export default function PlannerVendorMarketplace({setActivePage}){
         </section>
     );
 }
+

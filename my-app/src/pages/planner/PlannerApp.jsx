@@ -74,13 +74,14 @@ const PlannerApp = () => {
       case "documents":
         return renderPlaceholderPage("Document Management");
       case "selected-event":
-        return <PlannerViewEvent setActivePage={setActivePage}/>
+        return <PlannerViewEvent event={selectedEvent} setActivePage={setActivePage}/>
       default:
         return <PlannerDashboard setActivePage={setActivePage} />;
     }
   };
 
-  const onSelectEvent = () => {
+  const onSelectEvent = (event) => {
+    setSelectedEvent(event);
     setActivePage("selected-event");
   }
 

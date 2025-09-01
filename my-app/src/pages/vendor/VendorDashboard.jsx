@@ -242,33 +242,51 @@ const VendorDashboard = ({ setActivePage }) => {
         </div>
       </div>
 
-      {/* Quick Actions */}
       <div className="quick-actions">
-        <div className="dashboard-card">
-          <div className="card-header">
-            <h3>Quick Actions</h3>
-          </div>
-          <div className="actions-grid">
-            <button onClick={() => setActivePage("profile")} className="action-card blue">
-              <Edit size={24} />
-              <p>Update Profile</p>
-            </button>
-            <button onClick={() => setActivePage("bookings")} className="action-card green">
-              <Plus size={24} />
-              <p>New Booking</p>
-            </button>
-            <button onClick={() => setActivePage("contracts")} className="action-card purple">
-              <FileText size={24} />
-              <p>Review Contracts</p>
-            </button>
-            <button onClick={() => setActivePage("floorplan")} className="action-card orange">
-              <MapPin size={24} />
-              <p>Manage Venues</p>
-            </button>
-          </div>
-        </div>
-      </div>
+  <div className="dashboard-card">
+    <div className="card-header">
+      <h3>Quick Actions</h3>
     </div>
+    <div className="actions-grid">
+      <button
+        data-testid="quick-action-update-profile"
+        onClick={() => setActivePage("profile")}
+        className="action-card blue"
+      >
+        <Edit size={24} />
+        <p>Update Profile</p>
+      </button>
+
+      <button
+        data-testid="quick-action-new-booking"
+        onClick={() => setActivePage("bookings")}
+        className="action-card green"
+      >
+        <Plus size={24} />
+        <p>New Booking</p>
+      </button>
+
+      <button
+        data-testid="quick-action-review-contracts"
+        onClick={() => setActivePage("contracts")}
+        className="action-card purple"
+      >
+        <FileText size={24} />
+        <p>Review Contracts</p>
+      </button>
+
+      <button
+        data-testid="quick-action-manage-venues"
+        onClick={() => setActivePage("floorplan")}
+        className="action-card orange"
+      >
+        <MapPin size={24} />
+        <p>Manage Venues</p>
+      </button>
+    </div>
+  </div>
+</div>
+</div>
   );
 };
 

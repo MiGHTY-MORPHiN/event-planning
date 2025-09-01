@@ -38,7 +38,7 @@ export default function VendorApply() {
 
 
       profilePicBase64 = await new Promise((resolve, reject) => {
-        reader.onloadend = () => resolve(reader.result.split(",")[1]); // only base64
+        reader.onloadend = () => resolve(reader.result.split(",")[1]); 
         reader.onerror = reject;
         reader.readAsDataURL(profilePic);
       });
