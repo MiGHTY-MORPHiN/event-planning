@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import "./PlannerViewEvent.css";
+import { getAuth } from 'firebase/auth';
 
 function GuestRSVPSummary({guests}) {
     const totalGuests = guests.length;
-    const confirmedGuests = guests.filter(g => g.rsvpStatus === 'confirmed').length;
+    const confirmedGuests = guests.filter(g => g.rsvpStatus === 'attending').length;
     const pendingGuests = guests.filter(g => g.rsvpStatus === 'pending').length;
-    const declinedGuests = guests.filter(g => g.rsvpStatus === 'declined').length;
+    const declinedGuests = guests.filter(g => g.rsvpStatus === 'not_attending').length;
 
     return(
         <section className="rsvp-summary">
@@ -27,10 +28,12 @@ function GuestRSVPSummary({guests}) {
             <section className="rsvp-progress">
                 <section 
                     className="rsvp-progress-bar"
-                    style={{width: `${(confirmedGuests / totalGuests) * 100}%`}}
+                    style={{width: `${totalGuests > 0 ? (confirmedGuests / totalGuests) * 100 : 0}%`}}
                 ></section>
             </section>
-            <p className="rsvp-percentage">{Math.round((confirmedGuests / totalGuests) * 100)}% confirmed</p>
+            <p className="rsvp-percentage">
+                {totalGuests > 0 ? Math.round((confirmedGuests / totalGuests) * 100) : 0}% confirmed
+            </p>
         </section>
     );
 }
@@ -43,7 +46,8 @@ function VendorItem({vendor}) {
                 <p>{vendor.category}</p>
             </section>
             <section className="vendor-cost">
-                <p>R{vendor.cost.toLocaleString()}</p>
+                <h4>Current total cost: </h4>
+                <p>{vendor.cost}</p>
             </section>
             <section className="vendor-actions">
                 <button className="contact-btn">Contact</button>
@@ -53,67 +57,81 @@ function VendorItem({vendor}) {
     );
 }
 
-function TaskItem({task, onToggle}) {
+function TaskItem({taskName, taskStatus, onToggle}) {
+    const isCompleted = taskStatus === true;
+    
     return(
         <section className="task-item">
             <section className="task-checkbox">
                 <input 
                     type="checkbox" 
-                    checked={task.completed}
-                    onChange={onToggle}
+                    checked={isCompleted}
+                    onChange={() => onToggle(taskName)}
                 />
             </section>
             <section className="task-content">
-                <h4 className={task.completed ? "completed" : ""}>{task.task}</h4>
-                <p>Due: {new Date(task.dueDate).toLocaleDateString()}</p>
-            </section>
-            <section className="task-priority">
-                <span className={`priority-badge ${task.priority}`}>{task.priority}</span>
+                <h4 className={isCompleted ? "completed" : ""}>{taskName}</h4>
             </section>
         </section>
     );
 }
 
-export default function PlannerViewEvent({eventId, setActivePage}) {
+
+export default function PlannerViewEvent({event, setActivePage}) {
+
     const [isEditing, setIsEditing] = useState(false);
     const [activeTab, setActiveTab] = useState("overview");
-
-    const [eventData, setEventData] = useState({
-        id: 1,
-        name: "Sarah's Wedding",
-        date: "2025-09-15",
-        time: "14:00",
-        location: "Sandton Convention Centre",
-        address: "123 Rivonia Road, Sandton, Johannesburg",
-        attendees: 150,
-        budget: 85000,
-        spent: 42000,
-        status: "upcoming",
-        description: "Elegant garden wedding with reception for 150 guests. The ceremony will be held in the beautiful garden area followed by dinner and dancing.",
-        category: "Wedding",
-        vendors: [
-            { id: 1, name: "Sweet Treats Catering", category: "Catering", cost: 25000, status: "confirmed" },
-            { id: 2, name: "Glam Decor", category: "Decor", cost: 15000, status: "confirmed" },
-            { id: 3, name: "Bright Lights Photography", category: "Photography", cost: 8000, status: "pending" }
-        ],
-        tasks: [
-            { id: 1, task: "Book venue", completed: true, dueDate: "2025-08-01", priority: "high" },
-            { id: 2, task: "Send invitations", completed: true, dueDate: "2025-08-15", priority: "high" },
-            { id: 3, task: "Final headcount", completed: false, dueDate: "2025-09-01", priority: "medium" },
-            { id: 4, task: "Confirm catering", completed: false, dueDate: "2025-09-10", priority: "high" },
-            { id: 5, task: "Setup decorations", completed: false, dueDate: "2025-09-14", priority: "low" }
-        ],
-        guests: [
-            { id: 1, name: "John Smith", email: "john@email.com", rsvpStatus: "confirmed", plusOne: true },
-            { id: 2, name: "Jane Doe", email: "jane@email.com", rsvpStatus: "confirmed", plusOne: false },
-            { id: 3, name: "Mike Johnson", email: "mike@email.com", rsvpStatus: "pending", plusOne: true },
-            { id: 4, name: "Sarah Wilson", email: "sarah@email.com", rsvpStatus: "declined", plusOne: false },
-            { id: 5, name: "David Brown", email: "david@email.com", rsvpStatus: "confirmed", plusOne: true },
-            { id: 6, name: "Lisa Davis", email: "lisa@email.com", rsvpStatus: "pending", plusOne: false }
-        ]
-    });
+    const [guests, setGuests] = useState([]);
+    const [vendors, setVendors] = useState([]);
+    const [eventData, setEventData] = useState(event);
 
     const [editForm, setEditForm] = useState({...eventData});
+
+    const eventId = event.id;
+
+    const fetchGuests = async () => {
+    
+        const auth = getAuth();
+        const user = auth.currentUser;
+        const token = await user.getIdToken(true);
+    
+        const res = await fetch(`http://127.0.0.1:5001/planit-sdp/us-central1/api/planner/${eventId}/guests`, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+        if (!res.ok) return []; 
+    
+        const data = await res.json();
+        return data.guests || [];
+    };
+
+    const fetchVendors = async () => {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        const token = await user.getIdToken(true);
+    
+        const res = await fetch(`http://127.0.0.1:5001/planit-sdp/us-central1/api/planner/${eventId}/vendors`, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+        if (!res.ok) return []; 
+    
+        const data = await res.json();
+        return data.vendors || [];
+    };
+    
+    useEffect(() => {
+        async function loadGuests() {
+            const guests = await fetchGuests();
+            setGuests(guests);
+            console.log(guests);
+            const vendors = await fetchVendors();
+            setVendors(vendors);
+        }
+        loadGuests();
+    }, []);
 
     const handleSave = () => {
         setEventData({...editForm});
@@ -125,28 +143,27 @@ export default function PlannerViewEvent({eventId, setActivePage}) {
         setIsEditing(false);
     };
 
-    const handleTaskToggle = (taskId) => {
-        const updatedTasks = eventData.tasks.map(task => 
-            task.id === taskId ? {...task, completed: !task.completed} : task
-        );
-        setEventData({...eventData, tasks: updatedTasks});
+    const handleTaskToggle = (taskName) => {
+        setEventData((prev) => ({
+            ...prev,
+            tasks: {
+            ...prev.tasks,
+            [taskName]: !prev.tasks[taskName],
+            },
+        }));
     };
 
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { 
-            weekday: 'long', 
-            month: 'long', 
-            day: 'numeric',
-            year: 'numeric'
-        });
+    const formatDate = (timestamp) => {
+        console.log(typeof timestamp);
+        if(!timestamp) return "No date";
+        const date = new Date(timestamp._seconds*1000);
+        return date.toLocaleString();
     };
-
-    const budgetPercentage = (eventData.spent / eventData.budget) * 100;
 
     return(
         <section className="event-view-edit">
             <section className="event-header">
+                
                 <section className="header-top">
                     <button 
                         className="back-btn"
@@ -170,16 +187,11 @@ export default function PlannerViewEvent({eventId, setActivePage}) {
                         )}
                     </section>
                 </section>
-                
+
                 <section className="header-main">
                     {!isEditing ? (
                         <section className="event-title-info">
                             <h1>{eventData.name}</h1>
-                            <section className="event-meta">
-                                <span className="event-date">📅 {formatDate(eventData.date)} at {eventData.time}</span>
-                                <span className="event-location">📍 {eventData.location}</span>
-                                <span className={`event-status ${eventData.status}`}>{eventData.status}</span>
-                            </section>
                         </section>
                     ) : (
                         <section className="edit-title-section">
@@ -221,12 +233,6 @@ export default function PlannerViewEvent({eventId, setActivePage}) {
                     >
                         Tasks
                     </button>
-                    <button 
-                        className={`tab-btn ${activeTab === "budget" ? "active" : ""}`}
-                        onClick={() => setActiveTab("budget")}
-                    >
-                        Budget
-                    </button>
                 </section>
 
                 <section className="tab-content">
@@ -238,11 +244,10 @@ export default function PlannerViewEvent({eventId, setActivePage}) {
                                     {!isEditing ? (
                                         <section className="detail-info">
                                             <p><strong>Location:</strong> {eventData.location}</p>
-                                            <p><strong>Address:</strong> {eventData.address}</p>
                                             <p><strong>Date:</strong> {formatDate(eventData.date)}</p>
-                                            <p><strong>Time:</strong> {eventData.time}</p>
-                                            <p><strong>Expected Attendees:</strong> {eventData.attendees}</p>
-                                            <p><strong>Category:</strong> {eventData.category}</p>
+                                            <p><strong>Duration: </strong> {eventData.duration} hrs </p>
+                                            <p><strong>Expected Attendees:</strong> {eventData.expectedGuestCount}</p>
+                                            <p><strong>Category:</strong> {eventData.eventCategory}</p>
                                         </section>
                                     ) : (
                                         <section className="edit-form">
@@ -255,53 +260,30 @@ export default function PlannerViewEvent({eventId, setActivePage}) {
                                                 />
                                             </label>
                                             <label>
-                                                Address:
-                                                <input 
-                                                    type="text"
-                                                    value={editForm.address}
-                                                    onChange={(e) => setEditForm({...editForm, address: e.target.value})}
-                                                />
-                                            </label>
-                                            <label>
                                                 Date:
                                                 <input 
-                                                    type="date"
+                                                    type="datetime-local"
                                                     value={editForm.date}
                                                     onChange={(e) => setEditForm({...editForm, date: e.target.value})}
-                                                />
-                                            </label>
-                                            <label>
-                                                Time:
-                                                <input 
-                                                    type="time"
-                                                    value={editForm.time}
-                                                    onChange={(e) => setEditForm({...editForm, time: e.target.value})}
                                                 />
                                             </label>
                                             <label>
                                                 Expected Attendees:
                                                 <input 
                                                     type="number"
-                                                    value={editForm.attendees}
-                                                    onChange={(e) => setEditForm({...editForm, attendees: parseInt(e.target.value)})}
+                                                    value={editForm.expectedGuestCount}
+                                                    onChange={(e) => setEditForm({...editForm, expectedGuestCount: parseInt(e.target.value)})}
+                                                />
+                                            </label>
+                                            <label>
+                                                Category:
+                                                <input 
+                                                    type="text"
+                                                    value={editForm.eventCategory}
+                                                    onChange={(e) => setEditForm({...editForm, eventCategory: e.target.value})}
                                                 />
                                             </label>
                                         </section>
-                                    )}
-                                </section>
-                                
-                                <section className="detail-card">
-                                    <h3>Description</h3>
-                                    {!isEditing ? (
-                                        <p className="event-description">{eventData.description}</p>
-                                    ) : (
-                                        <textarea 
-                                            value={editForm.description}
-                                            onChange={(e) => setEditForm({...editForm, description: e.target.value})}
-                                            rows="5"
-                                            className="edit-textarea"
-                                            placeholder="Event description..."
-                                        />
                                     )}
                                 </section>
                             </section>
@@ -310,7 +292,8 @@ export default function PlannerViewEvent({eventId, setActivePage}) {
 
                     {activeTab === "guests" && (
                         <section className="guests-content">
-                            <GuestRSVPSummary guests={eventData.guests} />
+
+                            <GuestRSVPSummary guests={guests} />
                             
                             <section className="guests-section">
                                 <section className="guests-header">
@@ -319,16 +302,18 @@ export default function PlannerViewEvent({eventId, setActivePage}) {
                                 </section>
                                 
                                 <section className="guests-list">
-                                    {eventData.guests.map((guest) => (
+                                    {guests.length > 0 ? guests.map((guest) => (
                                         <section key={guest.id} className="guest-item">
                                             <section className="guest-info">
-                                                <h4>{guest.name}</h4>
+                                                <h4>{guest.firstname} {guest.lastname}</h4>
                                                 <p>{guest.email}</p>
                                                 <p>{guest.plusOne ? "Plus One: Yes" : "Plus One: No"}</p>
                                             </section>
                                             <section className="guest-rsvp">
                                                 <span className={`rsvp-badge ${guest.rsvpStatus}`}>
-                                                    {guest.rsvpStatus}
+                                                    {guest.rsvpStatus === 'attending' ? 'Confirmed' : 
+                                                     guest.rsvpStatus === 'not_attending' ? 'Declined' : 
+                                                     'Pending'}
                                                 </span>
                                             </section>
                                             <section className="guest-actions">
@@ -336,7 +321,11 @@ export default function PlannerViewEvent({eventId, setActivePage}) {
                                                 <button className="edit-guest-btn">Edit</button>
                                             </section>
                                         </section>
-                                    ))}
+                                    )) : (
+                                        <section className="empty-state">
+                                            <p>No guests added yet. Click "Add Guest" to invite people to your event.</p>
+                                        </section>
+                                    )}
                                 </section>
                             </section>
                         </section>
@@ -349,70 +338,42 @@ export default function PlannerViewEvent({eventId, setActivePage}) {
                                 <button className="add-vendor-btn">+ Add Vendor</button>
                             </section>
                             <section className="vendors-list">
-                                {eventData.vendors.map((vendor) => (
+                                {vendors && vendors.length > 0 ? vendors.map((vendor) => (
                                     <VendorItem key={vendor.id} vendor={vendor} />
-                                ))}
+                                )) : (
+                                    <section className="empty-state">
+                                        <p>No vendors added yet. Click "Add Vendor" to start building your vendor list.</p>
+                                    </section>
+                                )}
                             </section>
                         </section>
                     )}
 
-                    {activeTab === "tasks" && (
+                     {activeTab === "tasks" && (
                         <section className="tasks-content">
                             <section className="tasks-header">
                                 <h3>Event Tasks</h3>
                                 <button className="add-task-btn">+ Add Task</button>
                             </section>
-                            <section className="tasks-list">
-                                {eventData.tasks.map((task) => (
-                                    <TaskItem 
-                                        key={task.id} 
-                                        task={task} 
-                                        onToggle={() => handleTaskToggle(task.id)}
-                                    />
-                                ))}
-                            </section>
+                                <section className="tasks-list">
+                                    {eventData.tasks && Object.keys(eventData.tasks).length > 0 ? (
+                                       Object.entries(eventData.tasks).map(([taskName, completed], i) => (
+                                            <TaskItem
+                                            key={`${taskName}-${i}`}
+                                            taskName={taskName}
+                                            taskStatus={completed}
+                                            onToggle={handleTaskToggle}
+                                            />
+                                        ))
+                                    ) : (
+                                        <section className="empty-state">
+                                        <p>No tasks added yet. Click "Add Task" to start organizing your event planning.</p>
+                                        </section>
+                                    )}
+                                </section>
                         </section>
                     )}
 
-                    {activeTab === "budget" && (
-                        <section className="budget-content">
-                            <section className="budget-overview">
-                                <section className="budget-card total">
-                                    <h4>Total Budget</h4>
-                                    <p className="budget-amount">R{eventData.budget.toLocaleString()}</p>
-                                </section>
-                                <section className="budget-card spent">
-                                    <h4>Amount Spent</h4>
-                                    <p className="spent-amount">R{eventData.spent.toLocaleString()}</p>
-                                </section>
-                                <section className="budget-card remaining">
-                                    <h4>Remaining</h4>
-                                    <p className="remaining-amount">R{(eventData.budget - eventData.spent).toLocaleString()}</p>
-                                </section>
-                            </section>
-                            
-                            <section className="budget-progress-section">
-                                <h3>Budget Usage</h3>
-                                <section className="progress-container">
-                                    <section 
-                                        className="progress-bar"
-                                        style={{width: `${Math.min(budgetPercentage, 100)}%`}}
-                                    ></section>
-                                </section>
-                                <p className="budget-percentage">{budgetPercentage.toFixed(1)}% of budget used</p>
-                            </section>
-
-                            <section className="vendor-costs">
-                                <h3>Vendor Breakdown</h3>
-                                {eventData.vendors.map((vendor) => (
-                                    <section key={vendor.id} className="cost-item">
-                                        <span className="cost-vendor">{vendor.name}</span>
-                                        <span className="cost-amount">R{vendor.cost.toLocaleString()}</span>
-                                    </section>
-                                ))}
-                            </section>
-                        </section>
-                    )}
                 </section>
             </section>
         </section>

@@ -10,13 +10,15 @@ admin.initializeApp();
 const db = admin.firestore();
 const bucket = admin.storage().bucket();
 
+//import { doc, setDoc } from 'firebase/firestore';
+
 const app = express();
 app.use(cors({
   origin: [
     'http://localhost:5173',
 
     'https://witty-stone-03009b61e.1.azurestaticapps.net'
-  ]
+  ],
 }));
 app.use(express.json());
 
@@ -185,6 +187,50 @@ app.get('/planner/me/events', authenticate, async (req, res) => {
   }
 });
 
+
+//Get the guests for a particular event
+app.get('/planner/:eventId/guests', authenticate, async (req, res) =>{
+  try{
+
+    const eventId = req.params.eventId;
+    const snapshot = await db.collection("Event").doc(eventId).collection("Guests").get();
+
+    if(snapshot.empty){
+      return res.json({message: "No guests found for this event"});
+    }
+
+    const guests = snapshot.docs.map(doc => ({id: doc.id, ...doc.data() }));
+    console.log(guests);
+    res.json({eventId, guests});
+  }
+  catch(err){
+    console.error(err);
+    res.status(500).json({message: "Server error"});
+  }
+});
+
+//Get the vendors for a particular event
+app.get('/planner/:eventId/vendors', authenticate, async (req, res) => {
+
+  try{
+    const eventId = req.params.eventId;
+    const snapshot = await db.collection("Event").doc(eventId).collection("Vendors").get();
+
+    if(snapshot.empty){
+      return res.json({message: "No vendors found for this event"});
+    }
+
+    const vendors = snapshot.docs.map(doc => ({id: doc.id, ...doc.data() }));
+    console.log(vendors);
+    res.json({eventId, vendors});
+  }
+  catch(err){
+    console.error(err);
+    res.status(500).json({message: "Server error"});
+  }
+
+});
+
 //Create planner doc on signup
 app.post('/planner/signup', async (req, res) => {
   try{
@@ -212,6 +258,7 @@ app.post('/planner/signup', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+
 
 /**
  * @route   GET /api/admin/vendor-applications
@@ -256,6 +303,7 @@ app.put('/admin/vendor-applications/:vendorId', async (req, res) => {
     res.status(500).json({ message: 'Server error while updating application' });
   }
 });
+
 
 
 

@@ -91,59 +91,6 @@ export default function PlannerAllEvents({setActivePage, onSelectEvent}){
     loadEvents();
     }, [plannerId]);
 
-    const dummyEvents = [
-        { 
-            id: 1, 
-            name: "Sarah's Wedding", 
-            date: "2025-09-15", 
-            location: "Sandton Convention Centre", 
-            attendees: 150, 
-            budget: 85000, 
-            status: "upcoming",
-            description: "Elegant garden wedding with reception for 150 guests"
-        },
-        { 
-            id: 2, 
-            name: "Corporate Annual Gala", 
-            date: "2025-10-22", 
-            location: "Cape Town International Convention Centre", 
-            attendees: 500, 
-            budget: 250000, 
-            status: "upcoming",
-            description: "Annual company celebration and awards ceremony"
-        },
-        { 
-            id: 3, 
-            name: "Birthday Celebration", 
-            date: "2025-08-25", 
-            location: "Private Venue, Pretoria", 
-            attendees: 50, 
-            budget: 15000, 
-            status: "completed",
-            description: "Intimate 30th birthday celebration with close friends and family"
-        },
-        { 
-            id: 4, 
-            name: "Product Launch Event", 
-            date: "2025-09-08", 
-            location: "The Venue, Johannesburg", 
-            attendees: 200, 
-            budget: 120000, 
-            status: "in-progress",
-            description: "Tech startup product launch with networking reception"
-        },
-        { 
-            id: 5, 
-            name: "Charity Fundraiser", 
-            date: "2025-11-12", 
-            location: "Durban ICC", 
-            attendees: 300, 
-            budget: 180000, 
-            status: "upcoming",
-            description: "Annual charity fundraising dinner and auction"
-        }
-    ];
-
     const filteredEvents = events
         .filter(event => 
             (event.name.toLowerCase().includes(search.toLowerCase()) || 

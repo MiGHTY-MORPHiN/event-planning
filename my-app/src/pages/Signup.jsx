@@ -76,6 +76,8 @@ export default function Signup() {
             //To create planner document on signup
             const uid = userCrendential.user.uid;
             const email = userCrendential.user.email;
+
+            console.log(email);
             await createPlannerAccount(email, uid);
             navigate('/login');
         } catch (error) {

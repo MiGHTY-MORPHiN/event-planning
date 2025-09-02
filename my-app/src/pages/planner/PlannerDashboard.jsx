@@ -1,5 +1,8 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from "react-router-dom";
+
+
 import './PlannerDashboard.css';
 import { 
   Calendar, 
@@ -62,7 +65,54 @@ export default function PlannerDashboard() {
             <p className="summary-value">8</p>
             <p className="summary-subtext">Next 30 days</p>
           </section>
-        </section>
+        </section
+export default function PlannerDashboard({setActivePage}){
+
+    const navigate = useNavigate();
+
+    const upcomingEvents = [
+    { id: 1, title: "Annual Tech Conference", date: "Sep 25, 2025", time: "10:00 AM", attendees: 120, status: "Confirmed" },
+    { id: 2, title: "Marketing Workshop", date: "Sep 28, 2025", time: "2:00 PM", attendees: 85, status: "Pending" },
+    { id: 3, title: "Community Meetup", date: "Oct 2, 2025", time: "6:00 PM", attendees: 50, status: "Pending" }
+    ];
+
+    const pendingVendors = [
+    { id: 1, name: "ABC Catering", event: "Annual Tech Conference", contact: "abc@catering.com", status: "Confirmed" },
+    { id: 2, name: "SoundWorks", event: "Marketing Workshop", contact: "contact@soundworks.co.za", status: "Pending" },
+    { id: 3, name: "VenueCo", event: "Community Meetup", contact: "info@venueco.com", status: "Confirmed" }
+    ];
+
+
+    return(
+        <section className = 'page-container'>
+
+                {/* Header Section */}
+                <section className = "dashboard-intro">
+                    <section>
+                        <h1 className="dashboard-title">Planner Dashboard</h1>
+                        <p className="dashboard-subtitle">Welcome back, here's what's happening with your events.</p>
+                    </section>
+
+                    <section className='actions'>
+                        <button className='page-button'><Plus size={16}/> New Event</button>
+                    </section>
+
+                </section>
+
+            <section className="summary-cards-section">
+                {/* Upcoming Events */}
+                <section className="summary-card blue">
+                    <section className="summary-card-header">
+                    <Calendar size={40} />
+                    <section className="summary-change positive">+2 Upcoming</section>
+                    </section>
+                    <section className="summary-card-body">
+                    <h3 className="summary-label">Upcoming Events</h3>
+                    <p className="summary-value">8</p>
+                    <p className="summary-subtext">Next 30 days</p>
+                    </section>
+                </section>
+
 
         {/* Average Attendance */}
         <section className="summary-card green">

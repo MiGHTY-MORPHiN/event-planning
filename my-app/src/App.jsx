@@ -12,10 +12,13 @@ import VendorManagement from './pages/admin/VendorManagement.jsx';
 import VendorProfileEdit from './pages/vendor/vendorProfileEdit.jsx';
 import VendorProfile from './pages/vendor/vendorProfile.jsx';
 import VendorApply from './pages/vendor/vendorApply.jsx';
+
 import Reports from './pages/admin/Reports.jsx';
 import VendorApplications from './pages/admin/VendorApplications';
 import LandingPage from './pages/LandingPage.jsx';
 import NewEvent from './pages/planner/NewEvent.jsx';
+
+
 
 import './App.css'
 import VendorApp from './pages/vendor/vendorApp.jsx';
@@ -28,6 +31,12 @@ function App() {
 
         <Route path='/' element={<LandingPage />} />
         <Route path='/signup' element={<Signup />} />
+        <Route path='/login' element={<Login />} />
+        <Route path='/admin/planner-management' element ={<PlannerManagement/>} />\
+        <Route path='/admin/event-management' element ={<EventManagement/>} />
+        <Route path='/admin/vendor-management' element ={<VendorManagement/>} />
+        <Route path="/admin/reports" element={<Reports />} />
+
         <Route path='/login' element={<Login />} />
 
         <Route path='/home' element={<Home />} />
