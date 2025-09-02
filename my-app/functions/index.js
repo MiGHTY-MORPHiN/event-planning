@@ -208,7 +208,27 @@ app.get('/planner/:eventId/guests', authenticate, async (req, res) =>{
   }
 });
 
-app.get
+//Get the vendors for a particular event
+app.get('/planner/:eventId/vendors', authenticate, async (req, res) => {
+
+  try{
+    const eventId = req.params.eventId;
+    const snapshot = await db.collection("Event").doc(eventId).collection("Vendors").get();
+
+    if(snapshot.empty){
+      return res.json({message: "No vendors found for this event"});
+    }
+
+    const vendors = snapshot.docs.map(doc => ({id: doc.id, ...doc.data() }));
+    console.log(vendors);
+    res.json({eventId, vendors});
+  }
+  catch(err){
+    console.error(err);
+    res.status(500).json({message: "Server error"});
+  }
+
+});
 
 //Create planner doc on signup
 app.post('/planner/signup', async (req, res) => {

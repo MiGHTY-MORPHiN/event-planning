@@ -42,8 +42,12 @@ function VendorItem({vendor}) {
     return(
         <section className="vendor-item">
             <section className="vendor-info">
-                <h4>{vendor.businessName}</h4>
+                <h4>{vendor.name}</h4>
                 <p>{vendor.category}</p>
+            </section>
+            <section className="vendor-cost">
+                <h4>Current total cost: </h4>
+                <p>{vendor.cost}</p>
             </section>
             <section className="vendor-actions">
                 <button className="contact-btn">Contact</button>
@@ -53,18 +57,20 @@ function VendorItem({vendor}) {
     );
 }
 
-function TaskItem({task, onToggle}) {
+function TaskItem({taskName, taskStatus, onToggle}) {
+    const isCompleted = taskStatus === true;
+    
     return(
         <section className="task-item">
             <section className="task-checkbox">
                 <input 
                     type="checkbox" 
-                    checked={task.completed}
-                    onChange={onToggle}
+                    checked={isCompleted}
+                    onChange={() => onToggle(taskName)}
                 />
             </section>
             <section className="task-content">
-                <h4 className={task.completed ? "completed" : ""}>{task.task}</h4>
+                <h4 className={isCompleted ? "completed" : ""}>{taskName}</h4>
             </section>
         </section>
     );
@@ -76,6 +82,7 @@ export default function PlannerViewEvent({event, setActivePage}) {
     const [isEditing, setIsEditing] = useState(false);
     const [activeTab, setActiveTab] = useState("overview");
     const [guests, setGuests] = useState([]);
+    const [vendors, setVendors] = useState([]);
     const [eventData, setEventData] = useState(event);
 
     const [editForm, setEditForm] = useState({...eventData});
@@ -98,12 +105,30 @@ export default function PlannerViewEvent({event, setActivePage}) {
         const data = await res.json();
         return data.guests || [];
     };
+
+    const fetchVendors = async () => {
+        const auth = getAuth();
+        const user = auth.currentUser;
+        const token = await user.getIdToken(true);
+    
+        const res = await fetch(`http://127.0.0.1:5001/planit-sdp/us-central1/api/planner/${eventId}/vendors`, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+        if (!res.ok) return []; 
+    
+        const data = await res.json();
+        return data.vendors || [];
+    };
     
     useEffect(() => {
         async function loadGuests() {
             const guests = await fetchGuests();
             setGuests(guests);
             console.log(guests);
+            const vendors = await fetchVendors();
+            setVendors(vendors);
         }
         loadGuests();
     }, []);
@@ -118,16 +143,21 @@ export default function PlannerViewEvent({event, setActivePage}) {
         setIsEditing(false);
     };
 
-    const handleTaskToggle = (taskId) => {
-        const updatedTasks = eventData.tasks.map(task => 
-            task.id === taskId ? {...task, completed: !task.completed} : task
-        );
-        setEventData({...eventData, tasks: updatedTasks});
+    const handleTaskToggle = (taskName) => {
+        setEventData((prev) => ({
+            ...prev,
+            tasks: {
+            ...prev.tasks,
+            [taskName]: !prev.tasks[taskName],
+            },
+        }));
     };
 
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString();
+    const formatDate = (timestamp) => {
+        console.log(typeof timestamp);
+        if(!timestamp) return "No date";
+        const date = new Date(timestamp._seconds*1000);
+        return date.toLocaleString();
     };
 
     return(
@@ -215,6 +245,7 @@ export default function PlannerViewEvent({event, setActivePage}) {
                                         <section className="detail-info">
                                             <p><strong>Location:</strong> {eventData.location}</p>
                                             <p><strong>Date:</strong> {formatDate(eventData.date)}</p>
+                                            <p><strong>Duration: </strong> {eventData.duration} hrs </p>
                                             <p><strong>Expected Attendees:</strong> {eventData.expectedGuestCount}</p>
                                             <p><strong>Category:</strong> {eventData.eventCategory}</p>
                                         </section>
@@ -231,7 +262,7 @@ export default function PlannerViewEvent({event, setActivePage}) {
                                             <label>
                                                 Date:
                                                 <input 
-                                                    type="date"
+                                                    type="datetime-local"
                                                     value={editForm.date}
                                                     onChange={(e) => setEditForm({...editForm, date: e.target.value})}
                                                 />
@@ -307,7 +338,7 @@ export default function PlannerViewEvent({event, setActivePage}) {
                                 <button className="add-vendor-btn">+ Add Vendor</button>
                             </section>
                             <section className="vendors-list">
-                                {eventData.vendors && eventData.vendors.length > 0 ? eventData.vendors.map((vendor) => (
+                                {vendors && vendors.length > 0 ? vendors.map((vendor) => (
                                     <VendorItem key={vendor.id} vendor={vendor} />
                                 )) : (
                                     <section className="empty-state">
@@ -318,25 +349,28 @@ export default function PlannerViewEvent({event, setActivePage}) {
                         </section>
                     )}
 
-                    {activeTab === "tasks" && (
+                     {activeTab === "tasks" && (
                         <section className="tasks-content">
                             <section className="tasks-header">
                                 <h3>Event Tasks</h3>
                                 <button className="add-task-btn">+ Add Task</button>
                             </section>
-                            <section className="tasks-list">
-                                {eventData.tasks && eventData.tasks.length > 0 ? eventData.tasks.map((task) => (
-                                    <TaskItem 
-                                        key={task.id} 
-                                        task={task} 
-                                        onToggle={() => handleTaskToggle(task.id)}
-                                    />
-                                )) : (
-                                    <section className="empty-state">
+                                <section className="tasks-list">
+                                    {eventData.tasks && Object.keys(eventData.tasks).length > 0 ? (
+                                       Object.entries(eventData.tasks).map(([taskName, completed], i) => (
+                                            <TaskItem
+                                            key={`${taskName}-${i}`}
+                                            taskName={taskName}
+                                            taskStatus={completed}
+                                            onToggle={handleTaskToggle}
+                                            />
+                                        ))
+                                    ) : (
+                                        <section className="empty-state">
                                         <p>No tasks added yet. Click "Add Task" to start organizing your event planning.</p>
-                                    </section>
-                                )}
-                            </section>
+                                        </section>
+                                    )}
+                                </section>
                         </section>
                     )}
 
