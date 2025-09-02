@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function VendorManagement() {
+function VendorManagement() {
     return (
         <main className='main-container'>
             <div className='main-title'>
@@ -9,3 +9,5 @@ export default function VendorManagement() {
         </main>
     );
 }
+
+export default VendorManagement;

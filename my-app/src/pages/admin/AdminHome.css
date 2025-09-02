@@ -1,4 +1,3 @@
-
 :root {
   --blue-700: #1e3a8a;
   --purple-700: #6d28d9;
@@ -17,7 +16,6 @@ body{
     flex-direction: row;
     padding: 0;
 }
-
 
 .page-container {
     flex: 1;
@@ -123,7 +121,7 @@ body{
     justify-content: space-between;
 }
 
-.quick-actions {z
+.quick-actions {
     flex: 0.28;
     display: flex;
     flex-direction: column;

@@ -2,13 +2,11 @@ import React from 'react'
 import 
 {BsFillArchiveFill, BsFillGrid3X3GapFill, BsPeopleFill, BsFillBellFill}
  from 'react-icons/bs'
+import VendorApplications from './VendorApplications';
 
 function AdminHome() {
   return (
     <main className='main-container'>
-        <div className='main-title'>
-            <h3>DASHBOARD</h3>
-        </div>
 
         <div className='main-cards'>
             <div className='card'>
@@ -42,9 +40,10 @@ function AdminHome() {
         </div>
         <div className='vendor-applications'>
             <div className='card'>
-                <div className='card-inner'>
-                    <h3>Vendor Applications</h3>
-                </div>
+                <div className='main-title'>
+        <h3>Pending Vendor Applications</h3>
+      </div>
+                <VendorApplications/>
             </div>
         </div>
     </main>
