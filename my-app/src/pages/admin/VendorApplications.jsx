@@ -20,7 +20,7 @@ function VendorApplications() {
 		const fetchApplications = async () => {
 			try {
 				const apiUrl =
-					"http://localhost:5001/planit-sdp/us-central1/api/admin/vendor-applications";
+					"https://us-central1-planit-sdp.cloudfunctions.net/api/admin/vendor-applications";
 
 				const response = await fetch(apiUrl); // No auth headers needed for local testing
 
@@ -44,7 +44,7 @@ function VendorApplications() {
 	// Function to handle approving or rejecting a vendor
 	const handleUpdateStatus = async (vendorId, status) => {
 		try {
-			const apiUrl = `http://localhost:5001/planit-sdp/us-central1/api/admin/vendor-applications/${vendorId}`;
+			const apiUrl = `https://us-central1-planit-sdp.cloudfunctions.net/api/admin/vendor-applications/${vendorId}`;
 
 			const response = await fetch(apiUrl, {
 				method: "PUT",
