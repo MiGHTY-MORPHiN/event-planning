@@ -49,7 +49,9 @@ const navVendorApply = async () => {
     alert("Failed to check vendor status");
   }
 };
-
+const navAdminDashboard = () => {
+		navigate("/admin");
+	};
   const navLogout = () => {
     navigate("/");
   }
@@ -95,6 +97,24 @@ const navVendorApply = async () => {
             Enter Vendor Dashboard <ArrowRight size={20} />
           </button>
         </section>
+
+        {/* Admin Tile */}
+				<section className="role-tile center-tile">
+					<div className="icon-circle">
+						<Shield size={40} color="white" />
+					</div>
+					<h2>Admin</h2>
+					<ul>
+						<li style={{ color: "grey" }}>
+							User profile management
+						</li>
+						<li style={{ color: "grey" }}>Event management</li>
+					</ul>
+					<button id="dashboard" onClick={navAdminDashboard}>
+						Enter Admin Dashboard{" "}
+						<ArrowRight size={20}></ArrowRight>
+					</button>
+				</section>
       </section>
 
       <section className="trusted-section">
