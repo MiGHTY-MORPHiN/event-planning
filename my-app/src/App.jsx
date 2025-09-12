@@ -2,6 +2,7 @@
 import {BrowserRouter as Router, Routes, Route} from 'react-router-dom';
 import Signup from './pages/Signup.jsx';
 import Login from './pages/Login.jsx';
+import OutsideLogin from './pages/OutsideLogin.jsx';
 import Home from './pages/Home.jsx';
 import PlannerApp from './pages/planner/PlannerApp.jsx'
 import Admin from './pages/admin/Admin.jsx';
@@ -31,6 +32,7 @@ function App() {
         <Route path='/' element={<LandingPage />} />
         <Route path='/signup' element={<Signup />} />
         <Route path='/login' element={<Login />} />
+        <Route path='/outsidelogin' element={<OutsideLogin />} />
 
         <Route path='/home' element={<Home />} />
         

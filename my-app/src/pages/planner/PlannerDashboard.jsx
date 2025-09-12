@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
+import { isAfter, isBefore } from "date-fns";
 import './PlannerDashboard.css';
+import { getAuth, onAuthStateChanged } from "firebase/auth"; 
 import { 
   Calendar, 
   Users, 
@@ -13,21 +15,151 @@ import {
   Building 
 } from "lucide-react";
 
-export default function PlannerDashboard() {
+function PlannerDashboard({ onSelectEvent }) {
+  const plannerId = "";
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(true);
+  const [events, setEvents] = useState([]);
+  const [authUser, setAuthUser] = useState(undefined); // undefined = loading, null = not logged in, object = user
+  const today = new Date();
+  const future = new Date();
+  future.setDate(today.getDate() + 30);
 
-  const upcomingEvents = [
-    { id: 1, title: "Annual Tech Conference", date: "Sep 25, 2025", time: "10:00 AM", attendees: 120, status: "Confirmed" },
-    { id: 2, title: "Marketing Workshop", date: "Sep 28, 2025", time: "2:00 PM", attendees: 85, status: "Pending" },
-    { id: 3, title: "Community Meetup", date: "Oct 2, 2025", time: "6:00 PM", attendees: 50, status: "Pending" }
-  ];
+  function EventCard({event, onSelectEvent}){
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { 
+            weekday: 'short', 
+            month: 'short', 
+            day: 'numeric',
+            year: 'numeric'
+        });
+    };
+
+    const getStatusColor = (status) => {
+        switch(status) {
+            case 'upcoming': return '#10b981';
+            case 'in-progress': return '#f59e0b';
+            case 'completed': return '#6b7280';
+            default: return '#6366f1';
+        }
+    };
+
+    return(
+        <section className="event-card">
+            <section className="event-header">
+                <h3>{event.name}</h3>
+                <section 
+                    className="event-status" 
+                    style={{backgroundColor: getStatusColor(event.status)}}
+                >
+                    {event.status}
+                </section>
+            </section>
+            <section className="event-details">
+                <p className="event-date"> {formatDate(event.date)}</p>
+                <p className="event-location"> {event.location}</p>
+                <p className="event-attendees"> {event.expectedGuestCount} attendees</p>
+                <p className="event-budget"> R{event.budget.toLocaleString()}</p>
+            </section>
+            <section className="event-description">
+                <p>{event.description}</p>
+            </section>
+            <section className="event-buttons">
+                <button 
+                    className="select-btn"
+                    onClick={() => onSelectEvent(event)}
+                >
+                    Select Event
+                </button>
+                <button className="quick-view-btn">Quick View</button>
+            </section>
+        </section>
+    );
+}
+  const fetchPlannerEvents = async (user) => {
+    if (!user) {
+      console.warn("User not logged in");
+      return [];
+    }
+    const token = await user.getIdToken(true);
+    const res = await fetch(`https://us-central1-planit-sdp.cloudfunctions.net/api/planner/me/events`, {
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.events || [];
+  };
+
+  
+
+  // Listen for auth state changes and set user
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setAuthUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Fetch events only when authUser is loaded and not null
+  useEffect(() => {
+    if (authUser === undefined) return; // still loading
+    if (!authUser) {
+      setEvents([]);
+      return;
+    }
+    async function loadEvents() {
+      const events = await fetchPlannerEvents(authUser);
+      setEvents(events);
+    }
+    loadEvents();
+  }, [authUser]);
+  
+      function toDate(d) {
+        return d instanceof Date ? d : new Date(d);
+      }
+
+
+      const Upcoming = events
+      .filter(event => {
+        const eventDate = toDate(event.date);
+        return isAfter(eventDate, today) && isBefore(eventDate, future);
+      })
+      .sort((a, b) => toDate(a.date) - toDate(b.date));
+
+      const pastEvents = events
+      .filter(event => {
+        const eventDate = toDate(event.date);
+        return isBefore(eventDate, today);
+      })
+      .sort((a, b) => toDate(b.date) - toDate(a.date));
+
+      const allUpcoming = events
+      .filter(event => {
+        const eventDate = toDate(event.date);
+        return isAfter(eventDate, today);
+      })
+      .sort((a, b) => toDate(a.date) - toDate(b.date));
+
+      const pastAve = pastEvents.length > 0 ? Math.round(pastEvents.reduce((sum, event) => sum + (event.expectedGuestCount || 0), 0) / pastEvents.length) : 0;
+      const aveGuestCount = events.length > 0 ? Math.round(events.reduce((sum, event) => sum + (event.expectedGuestCount || 0), 0) / events.length) : 0;
+      const percentageChange = aveGuestCount === 0 ? 0 : Math.round(((aveGuestCount - pastAve) / pastAve) * 100);
 
   const pendingVendors = [
     { id: 1, name: "ABC Catering", event: "Annual Tech Conference", contact: "abc@catering.com", status: "Confirmed" },
     { id: 2, name: "SoundWorks", event: "Marketing Workshop", contact: "contact@soundworks.co.za", status: "Pending" },
     { id: 3, name: "VenueCo", event: "Community Meetup", contact: "info@venueco.com", status: "Confirmed" }
   ];
+
+  const totalUpcomingGuests = Upcoming.reduce((sum, event) => sum + (event.expectedGuestCount || 0), 0);
+
+  const totalPastGuests = pastEvents.reduce((sum, event) => sum + (event.expectedGuestCount || 0), 0);
+
+  const guestDiff = totalUpcomingGuests - totalPastGuests;
+  const percentageNewGuests = totalPastGuests === 0 ? 0 : Math.round((guestDiff / totalPastGuests) * 100);
 
   return (
     <section className='page-container'>
@@ -55,11 +187,11 @@ export default function PlannerDashboard() {
         <section className="summary-card blue">
           <section className="summary-card-header">
             <Calendar size={40} />
-            <section className="summary-change positive">+2 Upcoming</section>
+            <section className="summary-change positive">+{allUpcoming.length === Upcoming.length ? 0 : allUpcoming.length - Upcoming.length}</section>
           </section>
           <section className="summary-card-body">
             <h3 className="summary-label">Upcoming Events</h3>
-            <p className="summary-value">8</p>
+            <p className="summary-value"> {Upcoming.length}</p>
             <p className="summary-subtext">Next 30 days</p>
           </section>
         </section>
@@ -68,11 +200,11 @@ export default function PlannerDashboard() {
         <section className="summary-card green">
           <section className="summary-card-header">
             <Users size={40} />
-            <section className="summary-change positive">+5%</section>
+            <section className="summary-change positive">+{percentageChange}%</section>
           </section>
           <section className="summary-card-body">
             <h3 className="summary-label">Avg Attendance</h3>
-            <p className="summary-value">320</p>
+            <p className="summary-value">{aveGuestCount}</p>
             <p className="summary-subtext">Per Event</p>
           </section>
         </section>
@@ -81,11 +213,11 @@ export default function PlannerDashboard() {
         <section className="summary-card purple">
           <section className="summary-card-header">
             <Users size={40} />
-            <section className="summary-change positive">+12%</section>
+            <section className="summary-change positive">+{percentageNewGuests}%</section>
           </section>
           <section className="summary-card-body">
             <h3 className="summary-label">New Guests</h3>
-            <p className="summary-value">450</p>
+            <p className="summary-value">{guestDiff}</p>
             <p className="summary-subtext">This month</p>
           </section>
         </section>
@@ -118,18 +250,20 @@ export default function PlannerDashboard() {
                 View All
               </button>
             </section>
-            <section className="upcoming-events">
-              {upcomingEvents.map(event => (
-                <section key={event.id} className="upcoming-event event-item">
-                  <section className="event-header">
-                    <h4>{event.title}</h4>
-                  </section>
-                  <section className="event-footer">
-                    <section>{event.date} | {event.time}</section>
-                    <section>{event.attendees} attending</section>
-                  </section>
-                </section>
-              ))}
+            <section className="events-grid">
+                {Upcoming.length > 0 ? (
+                    Upcoming.map((event) => (
+                        <EventCard 
+                            key={event.id} 
+                            event={event} 
+                            onSelectEvent={onSelectEvent}
+                        />
+                    ))
+                ) : (
+                    <section className="no-events">
+                        <p>You have no upcoming events</p>
+                    </section>
+                )}
             </section>
           </section>
 
@@ -187,3 +321,4 @@ export default function PlannerDashboard() {
     </section>
   );
 }
+export default PlannerDashboard;
