@@ -20,6 +20,7 @@ import "./PlannerApp.css";
 import PlannerViewEvent from "./PlannerViewEvent";
 import PlannerAllEvents from "./PlannerAllEvents";
 import PlannerContract from "./PlannerContract";
+import PlannerFloorPlan from "./PlannerFloorPlan";
 
 const PlannerApp = () => {
 	//USing to page to the selected tab
@@ -84,7 +85,7 @@ const PlannerApp = () => {
 					/>
 				);
 			case "floorplan":
-				return renderPlaceholderPage("Floorplan View");
+				return <PlannerFloorPlan setActivePage={setActivePage} />;
 			case "guest management":
 				return renderPlaceholderPage("Guest Management");
 			case "documents":

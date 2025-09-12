@@ -4,11 +4,29 @@ const admin = require('firebase-admin');
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
+//ee702ea5-50cd-466b-a94b-41285799f3f0
 
 admin.initializeApp();
 
+const EXTERNAL_API_KEY = process.env.EXTERNAL_API_KEY || 'external-api-key-here';
 const db = admin.firestore();
 const bucket = admin.storage().bucket();
+
+function authenticateApiKey(req, res, next) {
+  const apiKey = req.headers['x-api-key'];
+  if (!apiKey || apiKey !== EXTERNAL_API_KEY) {
+    return res.status(401).json({ message: 'Invalid or missing API key' });
+  }
+  next();
+}
+
+// Rate limiting middleware (basic in-memory limiter for demo; use Redis or Firestore for production)
+const rateLimit = require('express-rate-limit');
+const guestListLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Max 100 requests per window per IP
+  message: { message: 'Too many requests, please try again later.' },
+});
 
 //import { doc, setDoc } from 'firebase/firestore';
 
@@ -620,23 +638,31 @@ app.get('/planner/:eventId/vendors', authenticate, async (req, res) => {
 });
 
 //Get the guests for a particular event
-app.get('/planner/:eventId/guests', authenticate, async (req, res) =>{
-  try{
-
+app.get('/planner/:eventId/guests', [guestListLimiter, authenticateApiKey], async (req, res) => {
+  try {
     const eventId = req.params.eventId;
     const snapshot = await db.collection("Event").doc(eventId).collection("Guests").get();
 
-    if(snapshot.empty){
-      return res.json({message: "No guests found for this event"});
+    if (snapshot.empty) {
+      return res.json({ eventId, guests: [], message: "No guests found for this event" });
     }
 
-    const guests = snapshot.docs.map(doc => ({id: doc.id, ...doc.data() }));
-    console.log(guests);
-    res.json({eventId, guests});
-  }
-  catch(err){
+    // Sanitize guest data to expose only necessary fields
+    const guests = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        firstname: data.firstname,
+        lastname: data.lastname,
+        email: data.email,
+        rsvpStatus: data.rsvpStatus || 'pending'
+      };
+    });
+
+    res.json({ eventId, guests });
+  } catch (err) {
     console.error(err);
-    res.status(500).json({message: "Server error"});
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 });
 

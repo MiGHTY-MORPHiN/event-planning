@@ -18,6 +18,7 @@ import "./vendorApp.css";
 import VendorReviews from "./vendorReviews";
 import VendorContract from "./VendorContract";
 
+
 const VendorApp = () => {
   const [activePage, setActivePage] = useState("dashboard");
  const navigate = useNavigate();
@@ -63,7 +64,7 @@ const VendorApp = () => {
       case "bookings":
         return <VendorBooking setActivePage={setActivePage}/>;
       case "floorplan":
-        return renderPlaceholderPage("Floorplan View");
+        return  "floorplan";
       case "reviews":
         return <VendorReviews setActivePage={setActivePage}/>;
       case "contracts":
