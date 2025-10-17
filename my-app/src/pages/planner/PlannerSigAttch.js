@@ -1,5 +1,35 @@
-// PDFSignatureAttachment.js
-// Updated to display both vendor (planner) and client signatures on certificate
+// PlannerSigAttch.js
+// Complete file for generating signature certificate with both vendor and client signatures
+// Integrates with SignatureAudit collection structure
+
+/**
+ * Gets the best signature source - prefers Firebase Storage URL, falls back to base64
+ */
+const getSignatureDisplaySource = (vendorSignature) => {
+  if (!vendorSignature) {
+    return null;
+  }
+
+  // Prefer Firebase Storage URL
+  if (vendorSignature.signatureUrl) {
+    return {
+      src: vendorSignature.signatureUrl,
+      source: 'firebase',
+      alt: 'Vendor Signature (Firebase Storage)',
+    };
+  }
+
+  // Fallback to base64
+  if (vendorSignature.signatureData) {
+    return {
+      src: vendorSignature.signatureData,
+      source: 'base64',
+      alt: 'Vendor Signature (Embedded)',
+    };
+  }
+
+  return null;
+};
 
 /**
  * Generates an HTML document with signature details for both vendor and client
@@ -35,7 +65,7 @@ export const generateSignatureDetailsHTML = (contract, signatureData, signerInfo
     } else if (fieldType === 'text') {
       displayValue = `<span style="font-weight: 600; color: #1f2937;">${data}</span>`;
     } else if (fieldType === 'checkbox') {
-      displayValue = `<span style="font-weight: 600; color: ${data ? '#1d4ed8' : '#9ca3af'};">${data ? '✓ Checked' : '○ Not Checked'}</span>`;
+      displayValue = `<span style="font-weight: 600; color: ${data ? '#1d4ed8' : '#9ca3af'};">${data ? '✓ Checked' : '◯ Not Checked'}</span>`;
     }
 
     signaturesHTML += `
@@ -55,43 +85,81 @@ export const generateSignatureDetailsHTML = (contract, signatureData, signerInfo
 
   // Vendor signature section
   let vendorSignatureHTML = '';
-  if (vendorSignature && vendorSignature.signatureData) {
-    vendorSignatureHTML = `
-      <section style="margin-bottom: 30px;">
-        <header style="font-size: 16px; font-weight: 700; color: #1f2937; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid #e5e7eb; letter-spacing: -0.3px;">
-          Planner Signature
-        </header>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-          <article style="padding: 16px; background: white; border-radius: 8px; border: 1px solid #e5e7eb; border-left: 3px solid #7c3aed;">
-            <header style="font-size: 11px; font-weight: 600; color: #6b7280; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">
-              Signature
-            </header>
-            <section style="margin-top: 10px;">
-              <img src="${vendorSignature.signatureData}" style="max-width: 100%; height: auto; border: 1px solid #e5e7eb; padding: 8px; background: white; border-radius: 4px;" alt="Planner Signature" />
-            </section>
-          </article>
-          <article style="padding: 16px; background: white; border-radius: 8px; border: 1px solid #e5e7eb; border-left: 3px solid #7c3aed;">
-            <header style="font-size: 11px; font-weight: 600; color: #6b7280; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;">
-              Signature Details
-            </header>
-            <section style="display: flex; flex-direction: column; gap: 10px;">
-              <div>
-                <span style="font-size: 10px; color: #6b7280; text-transform: uppercase; display: block; margin-bottom: 2px;">Name</span>
-                <span style="font-weight: 600; color: #1f2937; font-size: 14px;">${vendorSignature.vendorName || 'Planner'}</span>
-              </div>
-              <div>
-                <span style="font-size: 10px; color: #6b7280; text-transform: uppercase; display: block; margin-bottom: 2px;">Email</span>
-                <span style="font-weight: 600; color: #1f2937; font-size: 14px;">${vendorSignature.vendorEmail || 'Not specified'}</span>
-              </div>
-              <div>
-                <span style="font-size: 10px; color: #6b7280; text-transform: uppercase; display: block; margin-bottom: 2px;">Signed</span>
-                <span style="font-weight: 600; color: #1d4ed8; font-size: 14px;">${new Date(vendorSignature.signedAt).toLocaleString()}</span>
-              </div>
-            </section>
-          </article>
-        </div>
-      </section>
-    `;
+  if (vendorSignature) {
+    const signatureSrc = getSignatureDisplaySource(vendorSignature);
+    
+    if (signatureSrc) {
+      console.log('Vendor signature source:', {
+        source: signatureSrc.source,
+        alt: signatureSrc.alt,
+        hasUrl: !!signatureSrc.src,
+      });
+
+      const storageMethodLabel = 
+        vendorSignature.storageMethod === 'firebase' 
+          ? '✓ Firebase Storage' 
+          : vendorSignature.storageMethod === 'base64'
+          ? '⚠ Base64 Embedded'
+          : 'Unknown';
+
+      const storageMethodColor =
+        vendorSignature.storageMethod === 'firebase' ? '#059669' : '#f59e0b';
+      
+      vendorSignatureHTML = `
+        <section style="margin-bottom: 30px;">
+          <header style="font-size: 16px; font-weight: 700; color: #1f2937; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid #e5e7eb; letter-spacing: -0.3px;">
+            Vendor/Planner Signature
+          </header>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <article style="padding: 16px; background: white; border-radius: 8px; border: 1px solid #e5e7eb; border-left: 3px solid #7c3aed;">
+              <header style="font-size: 11px; font-weight: 600; color: #6b7280; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px;">
+                Signature
+              </header>
+              <section style="margin-top: 10px; min-height: 100px; display: flex; align-items: center; justify-content: center; background: #f9fafb; border-radius: 4px;">
+                <img 
+                  src="${signatureSrc.src}" 
+                  style="max-width: 100%; max-height: 90px; height: auto; border: 1px solid #e5e7eb; padding: 8px; background: white; border-radius: 4px;" 
+                  alt="${signatureSrc.alt}" 
+                  onerror="this.style.display='none'; this.parentElement.innerHTML='<p style=&quot;color:#dc2626;font-size:12px;font-weight:600;&quot;>Signature image failed to load</p>';"
+                />
+              </section>
+              <footer style="font-size: 10px; color: #9ca3af; margin-top: 8px; text-align: center;">
+                Source: ${signatureSrc.source}
+              </footer>
+            </article>
+            <article style="padding: 16px; background: white; border-radius: 8px; border: 1px solid #e5e7eb; border-left: 3px solid #7c3aed;">
+              <header style="font-size: 11px; font-weight: 600; color: #6b7280; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;">
+                Signature Details
+              </header>
+              <section style="display: flex; flex-direction: column; gap: 10px;">
+                <div>
+                  <span style="font-size: 10px; color: #6b7280; text-transform: uppercase; display: block; margin-bottom: 2px;">Name</span>
+                  <span style="font-weight: 600; color: #1f2937; font-size: 14px;">${vendorSignature.vendorName || 'Vendor/Planner'}</span>
+                </div>
+                <div>
+                  <span style="font-size: 10px; color: #6b7280; text-transform: uppercase; display: block; margin-bottom: 2px;">Email</span>
+                  <span style="font-weight: 600; color: #1f2937; font-size: 14px;">${vendorSignature.vendorEmail || 'Not specified'}</span>
+                </div>
+                <div>
+                  <span style="font-size: 10px; color: #6b7280; text-transform: uppercase; display: block; margin-bottom: 2px;">Signed</span>
+                  <span style="font-weight: 600; color: #1d4ed8; font-size: 14px;">${new Date(vendorSignature.signedAt).toLocaleString()}</span>
+                </div>
+                <div>
+                  <span style="font-size: 10px; color: #6b7280; text-transform: uppercase; display: block; margin-bottom: 2px;">Storage Method</span>
+                  <span style="font-weight: 600; color: ${storageMethodColor}; font-size: 11px;">
+                    ${storageMethodLabel}
+                  </span>
+                </div>
+              </section>
+            </article>
+          </div>
+        </section>
+      `;
+    } else {
+      console.warn('Unable to get signature display source for vendor signature');
+    }
+  } else {
+    console.warn('No vendor signature found in contract data');
   }
 
   return `
@@ -386,7 +454,6 @@ export const generateSignatureDetailsHTML = (contract, signatureData, signerInfo
 export const createSignatureDetailsDocument = (contract, signatureData, signerInfo, vendorSignature) => {
   const html = generateSignatureDetailsHTML(contract, signatureData, signerInfo, vendorSignature);
   
-  // Create a blob from the HTML
   const blob = new Blob([html], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
   
@@ -394,7 +461,6 @@ export const createSignatureDetailsDocument = (contract, signatureData, signerIn
     html,
     blob,
     url,
-    // Method to download as HTML (which can be printed to PDF)
     download: () => {
       const link = document.createElement('a');
       link.href = url;
@@ -403,7 +469,6 @@ export const createSignatureDetailsDocument = (contract, signatureData, signerIn
       link.click();
       document.body.removeChild(link);
     },
-    // Method to print (which can save as PDF)
     print: () => {
       const printWindow = window.open(url, '_blank');
       printWindow.addEventListener('load', () => {
@@ -426,35 +491,3 @@ export const getUserIPAddress = async () => {
     return 'Unable to capture';
   }
 };
-
-/**
- * Example usage in your PlannerContract.jsx:
- * 
- * import { createSignatureDetailsDocument, getUserIPAddress } from './PlannerSigAttch.js';
- * import VendorSignatureCanvas from './VendorSignatureCanvas';
- * 
- * // Show vendor signature canvas first
- * const handleVendorSign = async (vendorSignatureData) => {
- *   // Store vendor signature
- *   const vendorInfo = {
- *     signatureData: vendorSignatureData.signatureData,
- *     vendorName: vendorSignatureData.vendorName,
- *     vendorEmail: vendorSignatureData.vendorEmail,
- *     signedAt: vendorSignatureData.signedAt
- *   };
- *   
- *   // Then proceed with client signing or final submission
- * };
- * 
- * // When finalizing, include vendor signature
- * const sendSignedContract = async (signatureDataParam, vendorSignatureData) => {
- *   const ipAddress = await getUserIPAddress();
- *   
- *   const signerInfo = {
- *     ipAddress: ipAddress,
- *     userAgent: navigator.userAgent,
- *     signedAt: new Date().toISOString(),
- *     signerName: selectedContract.clientName,
- *     signerEmail: selectedContract.clientEmail,
- * 
- **/
