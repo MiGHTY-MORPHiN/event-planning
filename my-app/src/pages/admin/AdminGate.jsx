@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth } from "../../firebase";
-import BASE_URL from "../../apiConfig";
+import { auth } from "../../firebase"; // Ensure this path is correct
 
 // This component decides which page to show
 export default function AdminGate() {
@@ -15,6 +14,7 @@ export default function AdminGate() {
 				const unsubscribe = auth.onAuthStateChanged((user) => {
 					resolve(user);
 					unsubscribe();
+					
 				});
 			});
 
@@ -27,9 +27,12 @@ export default function AdminGate() {
 
 			try {
 				const token = await user.getIdToken();
-				const res = await fetch(`${BASE_URL}/admin/me`, {
-					headers: { Authorization: `Bearer ${token}` },
-				});
+				const res = await fetch(
+					"https://us-central1-planit-sdp.cloudfunctions.net/api/admin/me",
+					{
+						headers: { Authorization: `Bearer ${token}` },
+					}
+				);
 
 				if (res.status === 404) {
 					// If profile is not found, redirect to the create profile page

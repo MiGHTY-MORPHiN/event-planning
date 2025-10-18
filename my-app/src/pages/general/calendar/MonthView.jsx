@@ -5,7 +5,6 @@ import {
 	getTodayKey,
 	pad,
 } from "./dateUtils";
-import EventBlock from "./EventBlock"; // Assuming you have a component for displaying events
 import "./MonthView.css";
 
 // 1. Accept the new props: events, onEventClick, onDateClick
@@ -45,22 +44,19 @@ export default function MonthView({
 		}
 	};
 
+	// The corrected weekday headers array
+	const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
 	return (
 		<section className="month" aria-label="Month view">
 			<table className="month__table">
 				<thead>
 					<tr>
-						{["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
-							(d) => (
-								<th
-									key={d}
-									scope="col"
-									className="month__weekday"
-								>
-									{d}
-								</th>
-							)
-						)}
+						{weekdays.map((d) => (
+							<th key={d} scope="col" className="month__weekday">
+								{d}
+							</th>
+						))}
 					</tr>
 				</thead>
 				<tbody>
@@ -137,7 +133,6 @@ export default function MonthView({
 																	)
 																} // Use event-specific handler
 															>
-																{/* You can use a dedicated EventBlock component for better styling */}
 																{ev.title}
 															</li>
 														))}

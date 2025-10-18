@@ -1,4 +1,4 @@
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { getAuth } from "firebase/auth";
 import "./PlannerVendorMarketplace.css";
 import {AlertCircle, CheckCircle } from "lucide-react";
@@ -6,8 +6,8 @@ import ChatComponent from "./ChatComponent";
 import Popup from "../general/popup/Popup.jsx";
 import BASE_URL from "../../apiConfig.js";
 
-import VendorCard from "./VendorCardMarket.jsx";
-import VendorModal from "./VendorDetails.jsx";
+import VendorCard from "./MarketPlaceComponents/VendorCardMarket.jsx";
+import VendorModal from "./MarketPlaceComponents/VendorDetails.jsx";
 
 function formatDate(date) {
 	if (!date) return "";

@@ -1,4 +1,4 @@
-/* components/Calendar/DayView.css */
+/* calendar/DayView.css */
 
 .day {
   display: flex;
@@ -7,43 +7,51 @@
 }
 
 .day__header {
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--cal-border);
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
+  gap: 0.75rem;
 }
 
 .day__title {
-  margin: 6px 0;
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
 }
 
 .day__today-badge {
-  background: #e3f2fd;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 12px;
-  display: inline-block;
+  background: var(--cal-today-btn-bg);
+  color: var(--cal-text-primary);
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.day__body-scroll {
+  flex-grow: 1;
+  overflow: auto;
+  border: 1px solid var(--cal-border);
+  border-radius: 0.5rem;
 }
 
 .day__body {
   display: flex;
-  flex-grow: 1;
-  overflow: hidden;
-  border: 1px solid #eee;
-  border-radius: 8px;
+  position: relative;
 }
 
 .day__timecol {
   width: 70px;
-  padding-right: 6px;
+  flex-shrink: 0;
+  padding-right: 0.5rem;
   box-sizing: border-box;
-  background: #fafafa;
-  border-right: 1px solid #eee;
-  overflow: auto;
-}
-
-.day__timecol--today {
-  background: #f7fbff;
+  background: var(--cal-bg);
+  border-right: 1px solid var(--cal-border);
+  position: sticky;
+  left: 0;
+  z-index: 10;
 }
 
 .day__hours {
@@ -53,28 +61,22 @@
 }
 
 .day__hour {
-  padding-right: 6px;
+  padding-right: 0.5rem;
   text-align: right;
-  font-size: 12px;
+  font-size: 0.75rem;
+  color: var(--cal-text-secondary);
   box-sizing: border-box;
+  position: relative;
+  top: -0.5em; /* Center text against the line */
 }
 
 .day__col {
-  position: relative;
   flex: 1;
-  overflow-y: auto;
-  background: #fff;
+  position: relative;
 }
 
 .day__col--today {
-  background: #f7fbff;
-}
-
-.day__grid {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  background: var(--cal-today-btn-bg);
 }
 
 .day__grid-rows {
@@ -84,14 +86,11 @@
 }
 
 .day__grid-row {
-  border-top: 1px solid #f4f4f4;
+  border-top: 1px solid var(--cal-border);
   box-sizing: border-box;
 }
 
 .day__events-layer {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
 }

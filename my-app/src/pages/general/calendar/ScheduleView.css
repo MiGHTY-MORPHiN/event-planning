@@ -1,8 +1,10 @@
+/* calendar/ScheduleView.css */
+
 .schedule {
-  padding: 12px;
   overflow-y: auto;
   height: 100%;
   box-sizing: border-box;
+  color: var(--cal-text-primary);
 }
 
 .schedule__list {
@@ -12,23 +14,30 @@
 }
 
 .schedule__item {
-  padding: 10px;
-  border-bottom: 1px solid #eee;
-  background: white;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--cal-border);
+  background: var(--cal-bg);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.schedule__item:hover {
+  background-color: var(--cal-button-hover-bg);
 }
 
 .schedule__item--today {
-  background: #e3f2fd;
-  border-color: #cde7ff;
+  background: var(--cal-today-btn-bg);
+  border-left: 4px solid #3b82f6;
+  padding-left: calc(1.5rem - 4px);
 }
 
 .schedule__title {
-  font-weight: 700;
-  margin: 0 0 6px 0;
+  font-weight: 600;
+  font-size: 1rem;
+  margin: 0 0 0.25rem 0;
 }
 
 .schedule__meta {
-  color: #333;
-  opacity: 0.9;
+  color: var(--cal-text-secondary);
   margin: 0;
+  font-size: 0.875rem;
 }

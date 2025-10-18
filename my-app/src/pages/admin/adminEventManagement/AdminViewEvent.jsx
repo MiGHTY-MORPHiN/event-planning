@@ -2,20 +2,13 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../../planner/PlannerViewEvent.css";
 import { getAuth } from "firebase/auth";
-import BASE_URL from "../../../apiConfig";
 
 // RSVP summary bar (read-only)
 function GuestRSVPSummary({ guests }) {
 	const totalGuests = guests.length;
-	const confirmedGuests = guests.filter(
-		(g) => g.rsvpStatus === "accept"
-	).length;
-	const pendingGuests = guests.filter(
-		(g) => g.rsvpStatus === "pending"
-	).length;
-	const declinedGuests = guests.filter(
-		(g) => g.rsvpStatus === "declined"
-	).length;
+	const confirmedGuests = guests.filter(g => g.rsvpStatus === 'accept').length;
+	const pendingGuests = guests.filter(g => g.rsvpStatus === 'pending').length;
+	const declinedGuests = guests.filter(g => g.rsvpStatus === 'declined').length;
 
 	return (
 		<section className="rsvp-summary">
@@ -37,20 +30,11 @@ function GuestRSVPSummary({ guests }) {
 			<section className="rsvp-progress">
 				<section
 					className="rsvp-progress-bar"
-					style={{
-						width: `${
-							totalGuests > 0
-								? (confirmedGuests / totalGuests) * 100
-								: 0
-						}%`,
-					}}
+					style={{ width: `${totalGuests > 0 ? (confirmedGuests / totalGuests) * 100 : 0}%` }}
 				></section>
 			</section>
 			<p className="rsvp-percentage">
-				{totalGuests > 0
-					? Math.round((confirmedGuests / totalGuests) * 100)
-					: 0}
-				% confirmed
+				{totalGuests > 0 ? Math.round((confirmedGuests / totalGuests) * 100) : 0}% confirmed
 			</p>
 		</section>
 	);
@@ -104,11 +88,11 @@ export default function AdminViewEvent({ event, setActivePage }) {
 			const user = auth.currentUser;
 			if (!user) return;
 			const token = await user.getIdToken(true);
-			const res = await fetch(`${BASE_URL}/planner/${eventId}/guests`, {
+			const res = await fetch(`https://us-central1-planit-sdp.cloudfunctions.net/api/planner/${eventId}/guests`, {
 				headers: {
-					Authorization: `Bearer ${token}`,
-					"Content-Type": "application/json",
-				},
+					"Authorization": `Bearer ${token}`,
+					"Content-Type": "application/json"
+				}
 			});
 			if (!res.ok) return;
 			const data = await res.json();
@@ -125,11 +109,11 @@ export default function AdminViewEvent({ event, setActivePage }) {
 			const user = auth.currentUser;
 			if (!user) return;
 			const token = await user.getIdToken(true);
-			const res = await fetch(`${BASE_URL}/planner/${eventId}/vendors`, {
+			const res = await fetch(`https://us-central1-planit-sdp.cloudfunctions.net/api/planner/${eventId}/vendors`, {
 				headers: {
-					Authorization: `Bearer ${token}`,
-					"Content-Type": "application/json",
-				},
+					"Authorization": `Bearer ${token}`,
+					"Content-Type": "application/json"
+				}
 			});
 			if (!res.ok) return;
 			const data = await res.json();
@@ -146,10 +130,10 @@ export default function AdminViewEvent({ event, setActivePage }) {
 			const user = auth.currentUser;
 			if (!user) return;
 			const token = await user.getIdToken(true);
-			const res = await fetch(`${BASE_URL}/planner/${eventId}/services`, {
+			const res = await fetch(`https://us-central1-planit-sdp.cloudfunctions.net/api/planner/${eventId}/services`, {
 				headers: {
-					Authorization: `Bearer ${token}`,
-				},
+					"Authorization": `Bearer ${token}`
+				}
 			});
 			if (!res.ok) return;
 			const data = await res.json();
@@ -162,14 +146,8 @@ export default function AdminViewEvent({ event, setActivePage }) {
 
 	function formatDate(date) {
 		if (!date) return "";
-		if (
-			typeof date === "object" &&
-			typeof date._seconds === "number" &&
-			typeof date._nanoseconds === "number"
-		) {
-			const jsDate = new Date(
-				date._seconds * 1000 + date._nanoseconds / 1e6
-			);
+		if (typeof date === 'object' && typeof date._seconds === 'number' && typeof date._nanoseconds === 'number') {
+			const jsDate = new Date(date._seconds * 1000 + date._nanoseconds / 1e6);
 			return jsDate.toLocaleString();
 		}
 		if (date instanceof Date) {
@@ -184,125 +162,58 @@ export default function AdminViewEvent({ event, setActivePage }) {
 	return (
 		<section className="event-view-edit">
 			<section className="event-header">
-				<button
-					onClick={() =>
-						setActivePage
-							? setActivePage("event-management")
-							: navigate(-1)
-					}
-					className="back-btn"
-				>
+				<button onClick={() => setActivePage ? setActivePage("event-management") : navigate(-1)} className="back-btn">
 					← Back
 				</button>
 				<h2>{event.name || event.title}</h2>
 			</section>
 
 			<section className="event-tabs">
-				<button
-					onClick={() => setActiveTab("details")}
-					className={`tab-btn ${
-						activeTab === "details" ? "active" : ""
-					}`}
-				>
-					Details
-				</button>
-				<button
-					onClick={() => setActiveTab("guests")}
-					className={`tab-btn ${
-						activeTab === "guests" ? "active" : ""
-					}`}
-				>
-					Guests
-				</button>
-				<button
-					onClick={() => setActiveTab("vendors")}
-					className={`tab-btn ${
-						activeTab === "vendors" ? "active" : ""
-					}`}
-				>
-					Vendors
-				</button>
-				<button
-					onClick={() => setActiveTab("tasks")}
-					className={`tab-btn ${
-						activeTab === "tasks" ? "active" : ""
-					}`}
-				>
-					Tasks
-				</button>
+				<button onClick={() => setActiveTab("details")} className={`tab-btn ${activeTab === "details" ? "active" : ""}`}>Details</button>
+				<button onClick={() => setActiveTab("guests")} className={`tab-btn ${activeTab === "guests" ? "active" : ""}`}>Guests</button>
+				<button onClick={() => setActiveTab("vendors")} className={`tab-btn ${activeTab === "vendors" ? "active" : ""}`}>Vendors</button>
+				<button onClick={() => setActiveTab("tasks")} className={`tab-btn ${activeTab === "tasks" ? "active" : ""}`}>Tasks</button>
 			</section>
 
 			<section className="event-content">
 				{activeTab === "details" && (
 					<section className="event-details">
-						<p>
-							<b>Date:</b> {formatDate(event.date)}
-						</p>
-						<p>
-							<b>Location:</b> {event.location}
-						</p>
-						<p>
-							<b>Description:</b> {event.description}
-						</p>
-						<p>
-							<b>Expected Guests:</b> {event.expectedGuestCount}
-						</p>
-						<p>
-							<b>Budget:</b>{" "}
-							{event.budget ? `R${event.budget}` : "N/A"}
-						</p>
-						<p>
-							<b>Status:</b> {event.status}
-						</p>
+						<p><b>Date:</b> {formatDate(event.date)}</p>
+						<p><b>Location:</b> {event.location}</p>
+						<p><b>Description:</b> {event.description}</p>
+						<p><b>Expected Guests:</b> {event.expectedGuestCount}</p>
+						<p><b>Budget:</b> {event.budget ? `R${event.budget}` : "N/A"}</p>
+						<p><b>Status:</b> {event.status}</p>
 					</section>
 				)}
 
 				{activeTab === "guests" && (
 					<section className="guests-list">
 						<GuestRSVPSummary guests={guests} />
-						{guests.length > 0 ? (
-							guests.map((guest) => (
-								<section key={guest.id} className="guest-item">
-									<h4>
-										{guest.firstname} {guest.lastname}
-									</h4>
-									<p>{guest.email}</p>
-									<p>Plus Ones: {guest.plusOne}</p>
-									<span
-										className={`rsvp-badge ${guest.rsvpStatus}`}
-									>
-										{guest.rsvpStatus}
-									</span>
-								</section>
-							))
-						) : (
-							<p>No guests yet.</p>
-						)}
+						{guests.length > 0 ? guests.map((guest) => (
+							<section key={guest.id} className="guest-item">
+								<h4>{guest.firstname} {guest.lastname}</h4>
+								<p>{guest.email}</p>
+								<p>Plus Ones: {guest.plusOne}</p>
+								<span className={`rsvp-badge ${guest.rsvpStatus}`}>
+									{guest.rsvpStatus}
+								</span>
+							</section>
+						)) : <p>No guests yet.</p>}
 					</section>
 				)}
 
 				{activeTab === "vendors" && (
 					<section className="vendors-list">
-						{vendors.length > 0 ? (
-							vendors.map((vendor) => (
-								<VendorItem key={vendor.id} vendor={vendor} />
-							))
-						) : (
-							<p>No vendors yet.</p>
-						)}
+						{vendors.length > 0 ? vendors.map((vendor) => (
+							<VendorItem key={vendor.id} vendor={vendor} />
+						)) : <p>No vendors yet.</p>}
 						{services.length > 0 && (
 							<section className="services-list">
 								<h4>Services</h4>
 								{services.map((service) => (
-									<section
-										key={service.id}
-										className="service-item"
-									>
-										<p>
-											{service.serviceName} -{" "}
-											{service.vendorName} (R
-											{service.estimatedCost})
-										</p>
+									<section key={service.id} className="service-item">
+										<p>{service.serviceName} - {service.vendorName} (R{service.estimatedCost})</p>
 									</section>
 								))}
 							</section>
@@ -313,18 +224,14 @@ export default function AdminViewEvent({ event, setActivePage }) {
 				{activeTab === "tasks" && (
 					<section className="tasks-list">
 						{event.tasks && Object.keys(event.tasks).length > 0 ? (
-							Object.entries(event.tasks).map(
-								([taskName, completed], i) => (
-									<TaskItem
-										key={`${taskName}-${i}`}
-										taskName={taskName}
-										taskStatus={completed}
-									/>
-								)
-							)
-						) : (
-							<p>No tasks yet.</p>
-						)}
+							Object.entries(event.tasks).map(([taskName, completed], i) => (
+								<TaskItem
+									key={`${taskName}-${i}`}
+									taskName={taskName}
+									taskStatus={completed}
+								/>
+							))
+						) : <p>No tasks yet.</p>}
 					</section>
 				)}
 			</section>

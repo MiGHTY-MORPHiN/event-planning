@@ -1,36 +1,51 @@
-/* components/Calendar/MonthView.css */
+/* calendar/MonthView.css */
 
 .month__table {
   width: 100%;
   height: 100%;
   border-collapse: collapse;
   table-layout: fixed;
+  border-style: hidden; /* Hide table border, use cell borders instead */
+  box-shadow: 0 0 0 1px var(--cal-border); /* Create a border around the table */
+  border-radius: 0.5rem;
 }
 
 .month__weekday {
   font-weight: 600;
-  padding: 6px;
-  text-align: left;
-  border-bottom: 1px solid #eee;
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--cal-text-secondary);
+  border-bottom: 1px solid var(--cal-border);
 }
 
 .month__cell {
-  border: 1px solid #eee;
-  padding: 6px;
+  border: 1px solid var(--cal-border);
+  padding: 0.5rem;
   vertical-align: top;
-  height: 120px;
+  height: 120px; /* Default height */
   box-sizing: border-box;
   cursor: pointer;
-  background: white;
+  background: var(--cal-bg);
+  transition: background-color 0.2s ease;
+  color: var(--cal-text-primary);
+}
+.month__cell:hover {
+  background-color: var(--cal-button-hover-bg);
 }
 
 .month__cell--today {
-  background: #e3f2fd;
-  border-color: #bfe3ff;
+  background: var(--cal-today-btn-bg);
+}
+.month__cell--today .month__date {
+    background-color: #3b82f6;
+    color: #ffffff;
+    border-radius: 50%;
 }
 
 .month__cell--selected {
-  box-shadow: inset 0 0 0 2px rgba(0,0,0,0.06);
+  box-shadow: inset 0 0 0 2px #3b82f6;
+  background-color: var(--cal-button-hover-bg);
 }
 
 .month__cell-inner {
@@ -40,25 +55,46 @@
 }
 
 .month__date {
-  font-weight: 700;
-  display: block;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-bottom: 0.5rem;
 }
 
 .month__events {
-  margin-top: 6px;
   list-style: none;
   padding: 0;
-  margin: 6px 0 0 0;
+  margin: 0;
   overflow: hidden;
 }
 
 .month__event {
-  background: #e3f2fd;
+  background: #3b82f6;
+  color: #ffffff;
   margin: 2px 0;
   padding: 4px 6px;
   border-radius: 4px;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  box-shadow: 0 1px 2px 0 rgba(0,0,0,0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .month__cell {
+        height: 100px;
+        padding: 0.25rem;
+    }
+    .month__weekday {
+        padding: 0.5rem 0.25rem;
+    }
+    .month__event {
+        font-size: 0.7rem;
+    }
 }

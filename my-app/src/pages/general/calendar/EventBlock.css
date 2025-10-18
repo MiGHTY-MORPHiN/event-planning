@@ -1,30 +1,51 @@
-/* components/Calendar/EventBlock.css */
+/* calendar/EventBlock.css */
 
 .event-block {
   position: absolute;
-  left: 6px;
-  right: 6px;
-  background: #e3f2fd;
-  border: 1px solid #cde7ff;
-  border-radius: 6px;
-  padding: 6px;
+  left: 8px;
+  right: 8px;
+  background: var(--cal-today-btn-bg);
+  border-left: 4px solid #3b82f6;
+  border-radius: 4px;
+  padding: 0.25rem 0.5rem;
   box-sizing: border-box;
   overflow: hidden;
-  font-size: 13px;
+  font-size: 0.8rem;
+  color: var(--cal-text-primary);
+  box-shadow: var(--cal-shadow);
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
+.event-block:hover {
+  background-color: #dbeafe; /* A light blue for hover */
+  border-color: #2563eb;
+}
+
+@media (prefers-color-scheme: dark) {
+  .event-block:hover {
+    background-color: #0c4a6e;
+    border-color: #60a5fa;
+  }
+}
+
+
 .event-block__header {
-  margin: 0 0 4px 0;
+  margin: 0 0 2px 0;
 }
 
 .event-block__title {
-  font-weight: 700;
-  line-height: 1;
+  font-weight: 600;
+  line-height: 1.2;
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .event-block__time {
-  font-size: 12px;
-  opacity: 0.9;
+  font-size: 0.75rem;
+  color: var(--cal-text-secondary);
   margin: 0;
+  white-space: nowrap;
 }

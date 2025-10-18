@@ -143,6 +143,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  width: 50%;
   font-size: 0.95rem;
 }
 
@@ -314,7 +315,7 @@
 /* --- DARK MODE SUPPORT --- */
 @media (prefers-color-scheme: dark) {
   .vendor-marketplace {
-    background-color: #111827;
+    background-color: #11182f;
   }
 
   .marketplace-title {

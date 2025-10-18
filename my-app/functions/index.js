@@ -125,7 +125,6 @@ app.post('/vendor/apply', authenticate, async (req, res) => {
 });
 
 
-
 // Get the vendor profile
 app.get('/vendor/me', authenticate, async (req, res) => {
   try {
@@ -1186,6 +1185,7 @@ app.get('/planner/:plannerId/bestvendors', authenticate, async (req, res) => {
     res.status(500).json({ error: "Internal Server error" });
   }
 });
+
 
 //Add a vendor to an event
 app.post('/planner/:eventId/vendors/:vendorId', authenticate, async (req, res) => {
@@ -2327,6 +2327,65 @@ app.post('/planner/contracts/:eventId/:contractId/:fieldId/signatures/upload',
   }
 );
 
+//Amahle
+// Add this NEW endpoint after the planner signature upload endpoint
+app.post('/vendor/contracts/:eventId/:contractId/vendor-signature/upload',
+  authenticate,
+  busboyUploadToStorageMiddleware(undefined,
+     (req) => `Signatures/${req.params.eventId}/${req.params.contractId}/vendor_signature_${new Date().toISOString().replace(/[:.]/g, '-')}.png`),
+  async (req, res) => {
+    try {
+      const { eventId, contractId } = req.params;
+      const vendorId = req.uid;
+
+      if (!eventId || !contractId) {
+        return res.status(400).json({ message: 'Missing required fields' });
+      }
+      
+      // Check if file was uploaded
+      if (!req.uploads || Object.keys(req.uploads).length === 0) {
+        return res.status(400).json({ message: 'No signature file uploaded' });
+      }
+
+      // Get the uploaded file
+      const uploadedFile = Object.values(req.uploads)[0];
+      
+      // Generate permanent download URL
+      const token = uuidv4();
+      await uploadedFile.setMetadata({
+        metadata: {
+          firebaseStorageDownloadTokens: token,
+        },
+      });
+
+      const downloadURL = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(uploadedFile.name)}?alt=media&token=${token}`;
+
+      // Save vendor signature metadata to audit collection
+      await db.collection('SignatureAudit').add({
+        fieldId: 'vendor_signature',
+        signerId: vendorId,
+        signerRole: 'vendor',
+        contractId,
+        eventId,
+        signatureUrl: downloadURL,
+        signedAt: new Date().toISOString(),
+        ipAddress: req.ip || null,
+        userAgent: req.headers['user-agent'] || null,
+      });
+
+      res.json({ 
+        downloadURL,
+        message: 'Vendor signature uploaded successfully'
+      });
+    } catch (err) {
+      console.error('Error uploading vendor signature:', err);
+      res.status(500).json({ message: 'Server error', error: err.message });
+    }
+  }
+);
+
+
+
 // Save draft signatures
 app.post('/planner/contracts/:contractId/signatures/draft', authenticate, async (req, res) => {
   try {
@@ -2743,45 +2802,8 @@ app.delete('/admin/events/:eventId', async (req, res) => {
 });
 
 
-// Unprotected: Get all events for a user by UID (guid)
-app.get('/public/user/:uid/events', async (req, res) => {
-  try {
-    const uid = req.params.uid;
-    const snapshot = await db.collection("Event")
-      .where("plannerId", "==", uid)
-      .get();
-
-    if (snapshot.empty) {
-      return res.json({ uid, events: [] });
-    }
-
-    const events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    res.json({ uid, events });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-// Unprotected guest list endpoint (public)
-app.get('/public/event/:eventId/guests', async (req, res) => {
-  try {
-    const eventId = req.params.eventId;
-    const snapshot = await db.collection("Event").doc(eventId).collection("Guests").get();
-
-    if (snapshot.empty) {
-      return res.json({ message: "No guests found for this event" });
-    }
-
-    const guests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    res.json({ eventId, guests });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-
+const publicRoutes = require("./publicRoutes.js")(db, bucket, EXTERNAL_API_KEY);
+app.use("/public", publicRoutes);
 
 
 // =================================================================

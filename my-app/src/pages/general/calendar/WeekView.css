@@ -1,50 +1,77 @@
-/* components/Calendar/WeekView.css */
+/* calendar/WeekView.css */
 
 .week {
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow: hidden; /* Prevent double scrollbars */
 }
 
+/* --- Header --- */
 .week__header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 6px;
+  display: grid;
+  grid-template-columns: 70px repeat(7, 1fr); /* 70px for time gutter, 7 equal columns for days */
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--cal-border);
 }
 
-.week__timecol-spacer {
-  width: 70px;
+.week__header-time-gutter {
+  border-right: 1px solid var(--cal-border);
 }
 
 .week__day-head {
-  flex: 1;
   text-align: center;
-  font-weight: 600;
-  font-size: 13px;
-  padding: 6px 8px;
-  box-sizing: border-box;
+  padding: 0.5rem;
+  border-right: 1px solid var(--cal-border);
+}
+.week__day-head:last-child {
+  border-right: none;
 }
 
-.week__day-head--today {
-  background: #e3f2fd;
-  border-radius: 6px;
+.week__day-name {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--cal-text-secondary);
+  text-transform: uppercase;
+}
+
+.week__day-number {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+.week__day-head--today .week__day-number {
+  background-color: #3b82f6;
+  color: #ffffff;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
+  margin: 0.25rem auto 0;
+}
+
+/* --- Scrolling Body --- */
+.week__scroll-container {
+  flex-grow: 1;
+  overflow: auto; /* This is the ONLY element that scrolls */
 }
 
 .week__body {
-  display: flex;
-  flex-grow: 1;
-  overflow: hidden;
-  border: 1px solid #eee;
-  border-radius: 8px;
+  display: grid;
+  grid-template-columns: 70px repeat(7, 1fr);
+  position: relative;
 }
 
+/* --- Time Column --- */
 .week__timecol {
-  width: 70px;
-  padding-right: 6px;
-  box-sizing: border-box;
-  background: #fafafa;
-  border-right: 1px solid #eee;
-  overflow: auto;
+  grid-column: 1 / 2; /* Place in the first column */
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  background: var(--cal-bg);
+  border-right: 1px solid var(--cal-border);
 }
 
 .week__hours {
@@ -54,45 +81,49 @@
 }
 
 .week__hour {
-  padding-right: 6px;
   text-align: right;
-  font-size: 12px;
+  padding-right: 0.5rem;
   box-sizing: border-box;
 }
 
-.week__daycol {
-  flex: 1;
+.week__hour span {
   position: relative;
-  overflow-y: auto;
-  background: #fff;
+  top: -0.6em; /* Align text with the grid lines */
+  font-size: 0.75rem;
+  color: var(--cal-text-secondary);
+}
+
+/* --- Day Columns --- */
+.week__daycol {
+  position: relative;
+  border-right: 1px solid var(--cal-border);
+}
+.week__daycol:last-child {
+  border-right: none;
 }
 
 .week__daycol--today {
-  background: #f7fbff;
-}
-
-.week__grid {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  background-color: var(--cal-today-btn-bg);
 }
 
 .week__grid-rows {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none; /* Make sure it doesn't block event clicks */
 }
 
 .week__grid-row {
-  border-top: 1px solid #f4f4f4;
-  box-sizing: border-box;
+  flex-grow: 1;
+  border-top: 1px solid var(--cal-border);
+}
+.week__grid-row:first-child {
+  border-top: none;
 }
 
 .week__events-layer {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
+  z-index: 1;
 }

@@ -1,0 +1,76 @@
+/* Base item styling */
+.fp-item {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #111827;
+  user-select: none;
+  touch-action: none;
+  z-index: 2;
+  box-shadow: 0 2px 6px rgba(2, 6, 23, 0.12);
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  transition: all 0.15s ease;
+  background: #f0f9ff; /* light background for visibility */
+}
+
+/* Selected item styling */
+.fp-item.selected {
+  outline: 3px solid rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  transform: scale(1.02);
+  z-index: 999;
+}
+
+/* Specific shapes */
+.fp-item.round {
+  border-radius: 50%;
+}
+
+.fp-item.chair {
+  border-radius: 50%;
+  min-width: 22px;
+  min-height: 22px;
+  font-size: 10px;
+}
+
+.fp-item.light {
+  border-radius: 50%;
+  min-width: 20px;
+  min-height: 20px;
+  font-size: 10px;
+  background: #fff5e5;
+}
+
+.fp-item.stage {
+  border-radius: 6px;
+  opacity: 0.95;
+  font-size: 11px;
+  background: #e5f7ff;
+}
+
+/* Label inside item */
+.fp-label {
+  pointer-events: none;
+  font-weight: 600;
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.8);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Optional: dragging cursor */
+.fp-item.dragging {
+  cursor: grabbing;
+}
+
+/* Hover effect */
+.fp-item:hover {
+  filter: brightness(1.05);
+  cursor: grab;
+}
