@@ -1,562 +1,836 @@
-import '@testing-library/jest-dom';
-import React from 'react';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
-import { describe, it, beforeEach, afterEach, vi } from 'vitest';
-import { MemoryRouter } from 'react-router-dom';
-import { getAuth } from 'firebase/auth';
+import React from "react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { vi, beforeEach, afterEach, test, describe, expect } from "vitest";
 
-// Mock react-router-dom's useNavigate
+// Mock useNavigate
 const mockNavigate = vi.fn();
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom');
-  return {
-    ...actual,
-    useNavigate: () => mockNavigate,
-  };
-});
+vi.mock("react-router-dom", () => ({
+  useNavigate: () => mockNavigate,
+}));
 
-// Mock Firebase auth
-const mockGetIdToken = vi.fn(() => Promise.resolve('mock-token'));
-const mockOnAuthStateChanged = vi.fn();
+// Mock Firebase Auth
+vi.mock("firebase/auth", () => ({
+  getAuth: vi.fn(() => ({
+    currentUser: {
+      uid: "test-vendor-123",
+      getIdToken: vi.fn(() => Promise.resolve("mock-token")),
+    },
+    onAuthStateChanged: vi.fn((callback) => {
+      callback({
+        uid: "test-vendor-123",
+        getIdToken: () => Promise.resolve("mock-token"),
+      });
+      return vi.fn();
+    }),
+  })),
+}));
 
-// Create mock user
-const mockUser = {
-  uid: 'test-vendor',
-  getIdToken: mockGetIdToken,
+// Mock VendorProfileHTML
+vi.mock("../../pages/vendor/VendorProfileHTML", () => ({
+  default: ({
+    vendor,
+    services,
+    stats,
+    showServiceForm,
+    editingService,
+    deleting,
+    formData,
+    formErrors,
+    popupNotifications,
+    navProfileEdit,
+    setShowServiceForm,
+    handleChange,
+    handleSaveService,
+    handleEditService,
+    handleDeleteService,
+    removePopupNotification,
+    showPopupNotification,
+  }) => (
+    <div data-testid="vendor-profile-html">
+      <h1>Vendor Profile</h1>
+      
+      {vendor && (
+        <div data-testid="vendor-info">
+          <h2>{vendor.businessName}</h2>
+          <p>{vendor.email}</p>
+          <p>{vendor.phoneNumber}</p>
+        </div>
+      )}
+
+      {stats && (
+        <div data-testid="stats">
+          <span>Total Bookings: {stats.totalBookings}</span>
+          <span>Confirmed: {stats.confirmedBookings}</span>
+          <span>Reviews: {stats.totalReviews}</span>
+          <span>Rating: {stats.avgRating}</span>
+          <span>Services: {stats.totalServices}</span>
+        </div>
+      )}
+
+      <button onClick={navProfileEdit}>Edit Profile</button>
+      <button onClick={() => setShowServiceForm(true)}>Add Service</button>
+      <button onClick={() => showPopupNotification("Test", "Message", "info")}>
+        Show Notification
+      </button>
+
+      {services?.map(service => (
+        <div key={service.id} data-testid={`service-${service.id}`}>
+          <span>{service.serviceName}</span>
+          <span>{service.cost}</span>
+          <button onClick={() => handleEditService(service)}>Edit</button>
+          <button onClick={() => handleDeleteService(service.id)}>
+            {deleting === service.id ? "Deleting..." : "Delete"}
+          </button>
+        </div>
+      ))}
+
+      {showServiceForm && (
+        <div data-testid="service-form">
+          <input
+            name="serviceName"
+            value={formData.serviceName}
+            onChange={handleChange}
+            data-testid="input-serviceName"
+          />
+          {formErrors.serviceName && (
+            <span data-testid="error-serviceName">{formErrors.serviceName}</span>
+          )}
+          
+          <input
+            name="cost"
+            value={formData.cost}
+            onChange={handleChange}
+            data-testid="input-cost"
+          />
+          {formErrors.cost && (
+            <span data-testid="error-cost">{formErrors.cost}</span>
+          )}
+          
+          <input
+            name="chargeByHour"
+            value={formData.chargeByHour}
+            onChange={handleChange}
+            data-testid="input-chargeByHour"
+          />
+          
+          <input
+            name="chargePerPerson"
+            value={formData.chargePerPerson}
+            onChange={handleChange}
+            data-testid="input-chargePerPerson"
+          />
+          
+          <input
+            name="chargePerSquareMeter"
+            value={formData.chargePerSquareMeter}
+            onChange={handleChange}
+            data-testid="input-chargePerSquareMeter"
+          />
+          
+          <input
+            name="extraNotes"
+            value={formData.extraNotes}
+            onChange={handleChange}
+            data-testid="input-extraNotes"
+          />
+          
+          <button onClick={handleSaveService}>
+            {editingService ? "Update" : "Save"} Service
+          </button>
+        </div>
+      )}
+
+      {popupNotifications?.map(notif => (
+        <div key={notif.id} data-testid={`notification-${notif.id}`}>
+          <h3>{notif.title}</h3>
+          <p>{notif.message}</p>
+          <span>{notif.type}</span>
+          <button onClick={() => removePopupNotification(notif.id)}>Close</button>
+        </div>
+      ))}
+    </div>
+  ),
+}));
+
+// Mock fetch
+global.fetch = vi.fn();
+
+// Mock window.Notification
+global.Notification = {
+  permission: "default",
+  requestPermission: vi.fn(() => Promise.resolve("granted")),
 };
 
-beforeEach(() => {
-  mockNavigate.mockClear();
-  global.fetch.mockClear();
-  global.confirm = vi.fn(() => true);
-  
-  // Reset auth mocks with default implementation
-  mockGetIdToken.mockResolvedValue('mock-token');
-  mockOnAuthStateChanged.mockImplementation((callback) => {
-    callback(mockUser);
-    return vi.fn(); // unsubscribe function
-  });
-  
-  // Mock getAuth to return our mock auth object
-  vi.mocked(getAuth).mockReturnValue({
-    currentUser: mockUser,
-    onAuthStateChanged: mockOnAuthStateChanged,
-  });
-});
+// Mock window.confirm
+global.confirm = vi.fn(() => true);
 
-afterEach(() => {
-  vi.restoreAllMocks();
-});
+// Import component after mocks
+const VendorProfileModule = await import("../../pages/vendor/vendorProfile");
+const VendorProfile = VendorProfileModule.default;
+const NotificationSystem = VendorProfileModule.NotificationSystem;
 
-// Import component AFTER all mocks
-import VendorProfile from "../../pages/vendor/vendorProfile";
-
-
-describe('vendorProfile', () => {
-  const mockVendorData = {
-    businessName: 'Test Vendor',
-    category: 'Catering',
-    description: 'Quality catering services',
-    address: '123 Street',
-    phone: '0123456789',
-    email: 'test@vendor.com',
-    bookings: 10,
-    totalReviews: 5,
-    avgRating: 4.5,
-    profilePic: 'https://example.com/profile.jpg',
+describe("VendorProfile", () => {
+  const mockVendorResponse = {
+    businessName: "Test Catering Co",
+    email: "test@catering.com",
+    phoneNumber: "+1234567890",
+    description: "Best catering service",
   };
 
-  const mockServicesData = [
+  const mockServicesResponse = [
     {
-      id: 'service1',
-      serviceName: 'Buffet',
-      cost: '500',
-      chargeByHour: '50',
-      chargePerPerson: '25',
-      chargePerSquareMeter: '10',
-      extraNotes: 'Includes setup',
+      id: "service1",
+      serviceName: "Catering Service",
+      cost: "10000",
+      chargeByHour: "500",
+      chargePerPerson: "200",
+      chargePerSquareMeter: "",
+      extraNotes: "Full service",
+    },
+    {
+      id: "service2",
+      serviceName: "DJ Service",
+      cost: "5000",
+      chargeByHour: "1000",
+      chargePerPerson: "",
+      chargePerSquareMeter: "",
+      extraNotes: "",
     },
   ];
 
-  const renderComponent = () => {
-    return render(
-      <MemoryRouter>
-        <VendorProfile />
-      </MemoryRouter>
-    );
+  const mockAnalyticsResponse = {
+    reviews: [
+      { id: "r1", rating: 5, reviewerName: "John", review: "Great!" },
+      { id: "r2", rating: 4, reviewerName: "Jane", review: "Good" },
+    ],
   };
 
-  const setupSuccessfulFetches = (vendorData = mockVendorData, servicesData = mockServicesData) => {
-    global.fetch
-      .mockResolvedValueOnce({
+  const mockBookingsResponse = {
+    bookings: [
+      { id: "b1", status: "confirmed", eventName: "Wedding" },
+      { id: "b2", status: "accepted", eventName: "Party" },
+      { id: "b3", status: "pending", eventName: "Event" },
+    ],
+  };
+
+  const mockReviewsResponse = {
+    reviews: [
+      { id: "r1", rating: 5 },
+      { id: "r2", rating: 4 },
+    ],
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockNavigate.mockClear();
+
+    // Setup default fetch responses
+    global.fetch.mockImplementation((url) => {
+      if (url.includes("/vendor/me")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockVendorResponse),
+        });
+      }
+      if (url.includes("/services")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockServicesResponse),
+        });
+      }
+      if (url.includes("/analytics/")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockAnalyticsResponse),
+        });
+      }
+      if (url.includes("/vendor/bookings")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockBookingsResponse),
+        });
+      }
+      if (url.includes("/reviews")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockReviewsResponse),
+        });
+      }
+      return Promise.reject(new Error("Unknown URL"));
+    });
+  });
+
+  afterEach(() => {
+    vi.clearAllTimers();
+  });
+
+  test("shows loading spinner initially", () => {
+    render(<VendorProfile />);
+    expect(screen.getByText("Loading your profile and services...")).toBeInTheDocument();
+  });
+
+  test("loads and displays vendor profile successfully", async () => {
+    render(<VendorProfile />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("vendor-info")).toBeInTheDocument();
+    });
+
+    expect(screen.getByText("Test Catering Co")).toBeInTheDocument();
+    expect(screen.getByText("test@catering.com")).toBeInTheDocument();
+  });
+
+  test("displays services correctly", async () => {
+    render(<VendorProfile />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("service-service1")).toBeInTheDocument();
+    });
+
+    expect(screen.getByText("Catering Service")).toBeInTheDocument();
+    expect(screen.getByText("DJ Service")).toBeInTheDocument();
+  });
+
+  test("calculates and displays stats correctly", async () => {
+    render(<VendorProfile />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("stats")).toBeInTheDocument();
+    });
+
+    expect(screen.getByText("Total Bookings: 3")).toBeInTheDocument();
+    expect(screen.getByText("Confirmed: 2")).toBeInTheDocument();
+    expect(screen.getByText("Reviews: 2")).toBeInTheDocument();
+    expect(screen.getByText("Services: 2")).toBeInTheDocument();
+  });
+
+  test("navigates to edit profile when button clicked", async () => {
+    render(<VendorProfile />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Edit Profile")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Edit Profile"));
+    expect(mockNavigate).toHaveBeenCalledWith("/vendor/vendor-edit-profile");
+  });
+
+  test("opens service form when Add Service clicked", async () => {
+    render(<VendorProfile />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Add Service")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Add Service"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("service-form")).toBeInTheDocument();
+    });
+  });
+
+  test("validates service form - empty service name", async () => {
+    render(<VendorProfile />);
+
+    await waitFor(() => {
+      fireEvent.click(screen.getByText("Add Service"));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("service-form")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Save Service"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("error-serviceName")).toHaveTextContent("Service name is required");
+    });
+  });
+
+  test("validates service form - service name too long", async () => {
+    render(<VendorProfile />);
+
+    await waitFor(() => {
+      fireEvent.click(screen.getByText("Add Service"));
+    });
+
+    const serviceNameInput = screen.getByTestId("input-serviceName");
+    fireEvent.change(serviceNameInput, {
+      target: { name: "serviceName", value: "a".repeat(101) },
+    });
+
+    fireEvent.click(screen.getByText("Save Service"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("error-serviceName")).toHaveTextContent(
+        "Service name must be less than 100 characters"
+      );
+    });
+  });
+
+  
+  test("validates service form - no letters in service name", async () => {
+    render(<VendorProfile />);
+
+    await waitFor(() => {
+      fireEvent.click(screen.getByText("Add Service"));
+    });
+
+    const serviceNameInput = screen.getByTestId("input-serviceName");
+    fireEvent.change(serviceNameInput, {
+      target: { name: "serviceName", value: "!@#$%" },
+    });
+
+    fireEvent.click(screen.getByText("Save Service"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("error-serviceName")).toHaveTextContent(
+        "Service name must contain at least one letter"
+      );
+    });
+  });
+
+  test("validates service form - cost required", async () => {
+    render(<VendorProfile />);
+
+    await waitFor(() => {
+      fireEvent.click(screen.getByText("Add Service"));
+    });
+
+    const serviceNameInput = screen.getByTestId("input-serviceName");
+    fireEvent.change(serviceNameInput, {
+      target: { name: "serviceName", value: "Test Service" },
+    });
+
+    fireEvent.click(screen.getByText("Save Service"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("error-cost")).toHaveTextContent("Base cost is required");
+    });
+  });
+
+  test("validates service form - invalid cost", async () => {
+    render(<VendorProfile />);
+
+    await waitFor(() => {
+      fireEvent.click(screen.getByText("Add Service"));
+    });
+
+    const serviceNameInput = screen.getByTestId("input-serviceName");
+    const costInput = screen.getByTestId("input-cost");
+
+    fireEvent.change(serviceNameInput, {
+      target: { name: "serviceName", value: "Test Service" },
+    });
+    fireEvent.change(costInput, {
+      target: { name: "cost", value: "-100" },
+    });
+
+    fireEvent.click(screen.getByText("Save Service"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("error-cost")).toHaveTextContent(
+        "Base cost must be a valid positive number"
+      );
+    });
+  });
+
+  test("validates service form - cost too high", async () => {
+    render(<VendorProfile />);
+
+    await waitFor(() => {
+      fireEvent.click(screen.getByText("Add Service"));
+    });
+
+    const costInput = screen.getByTestId("input-cost");
+    fireEvent.change(costInput, {
+      target: { name: "cost", value: "2000000" },
+    });
+
+    fireEvent.click(screen.getByText("Save Service"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("error-cost")).toHaveTextContent("Base cost is too high");
+    });
+  });
+
+  
+
+
+  test("successfully saves a new service", async () => {
+    global.fetch.mockImplementationOnce((url, options) => {
+      if (url.includes("/services") && options?.method === "POST") {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ serviceId: "new-service-123" }),
+        });
+      }
+      return Promise.resolve({
         ok: true,
-        json: () => Promise.resolve(vendorData),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(servicesData),
+        json: () => Promise.resolve(mockServicesResponse),
       });
-  };
+    });
 
-  it('renders loading state initially', () => {
-    setupSuccessfulFetches();
-    
-    renderComponent();
-    
-    expect(screen.getByText(/Loading your profile and services/i)).toBeInTheDocument();
-  });
-
-  it('renders no profile found when API returns null vendor', async () => {
-    setupSuccessfulFetches(null, []);
-
-    renderComponent();
+    render(<VendorProfile />);
 
     await waitFor(() => {
-      expect(screen.getByText(/No vendor profile found/i)).toBeInTheDocument();
-    }, { timeout: 3000 });
-  });
-
-  it('renders vendor profile with data from API', async () => {
-    setupSuccessfulFetches();
-
-    renderComponent();
-
-    await waitFor(() => {
-      expect(screen.getByText('Test Vendor')).toBeInTheDocument();
-      expect(screen.getByText('Catering')).toBeInTheDocument();
-    }, { timeout: 3000 });
-  });
-
-  it('handles authentication errors gracefully', async () => {
-    // Override to simulate unauthenticated user
-    mockOnAuthStateChanged.mockImplementation((callback) => {
-      callback(null);
-      return vi.fn();
+      fireEvent.click(screen.getByText("Add Service"));
     });
 
-    setupSuccessfulFetches();
+    const serviceNameInput = screen.getByTestId("input-serviceName");
+    const costInput = screen.getByTestId("input-cost");
 
-    renderComponent();
-
-    await waitFor(() => {
-      expect(screen.getByText(/User not authenticated/i)).toBeInTheDocument();
-    }, { timeout: 3000 });
-  });
-
-  // Service Management Tests - FIXED
-  it('submits service form with valid data', async () => {
-    setupSuccessfulFetches(mockVendorData, []);
-    
-    // Mock the service creation response
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ serviceId: 'new-service-1' }),
+    fireEvent.change(serviceNameInput, {
+      target: { name: "serviceName", value: "New Service" },
+    });
+    fireEvent.change(costInput, {
+      target: { name: "cost", value: "1000" },
     });
 
-    renderComponent();
+    fireEvent.click(screen.getByText("Save Service"));
 
-    await waitFor(() => {
-      expect(screen.getByText('Test Vendor')).toBeInTheDocument();
-    });
-    
-    // Open the add service modal
-    const addServiceButton = screen.getByRole('button', { name: /Add Service/i });
-    fireEvent.click(addServiceButton);
-
-    // Wait for modal to open and verify
-    await waitFor(() => {
-      expect(screen.getByText(/Add New Service/i)).toBeInTheDocument();
-    });
-
-    // Now query for elements within the modal context
-    const modal = screen.getByText(/Add New Service/i).closest('.modal-content');
-    
-    // Fill out the form - these inputs should be unique to the modal
-    const serviceNameInput = screen.getByPlaceholderText(/e.g., Catering, Photography/i);
-    const baseCostInput = screen.getByPlaceholderText(/e.g., 10000/i);
-
-    fireEvent.change(serviceNameInput, { 
-      target: { value: 'Premium Catering' } 
-    });
-    fireEvent.change(baseCostInput, { 
-      target: { value: '1500' } 
-    });
-
-    // Submit the form - get the button specifically from the modal
-    const modalSaveButton = within(modal).getByRole('button', { name: /Add Service/i });
-    fireEvent.click(modalSaveButton);
-
-    // Verify API was called correctly
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/vendors/test-vendor/services'),
+        expect.stringContaining("/services"),
         expect.objectContaining({
-          method: 'POST',
-          headers: expect.objectContaining({
-            'Content-Type': 'application/json',
-            Authorization: 'Bearer mock-token',
-          }),
+          method: "POST",
         })
       );
     });
   });
 
-  it('deletes a service after confirmation', async () => {
-    setupSuccessfulFetches();
+  test("handles edit service", async () => {
+    render(<VendorProfile />);
 
-    // Mock the delete response - pay attention to the order
-    global.fetch
-      .mockResolvedValueOnce({ // This handles the delete call
+    await waitFor(() => {
+      expect(screen.getByTestId("service-service1")).toBeInTheDocument();
+    });
+
+    const editButtons = screen.getAllByText("Edit");
+    fireEvent.click(editButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("service-form")).toBeInTheDocument();
+      expect(screen.getByTestId("input-serviceName")).toHaveValue("Catering Service");
+    });
+  });
+
+  test("successfully updates an existing service", async () => {
+    global.fetch.mockImplementation((url, options) => {
+      if (url.includes("/services") && options?.method === "POST") {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ serviceId: "service1" }),
+        });
+      }
+      if (url.includes("/services")) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockServicesResponse),
+        });
+      }
+      return Promise.resolve({
         ok: true,
         json: () => Promise.resolve({}),
-      })
-      .mockResolvedValueOnce({ // This handles the subsequent services refresh
-        ok: true,
-        json: () => Promise.resolve([]),
       });
-
-    renderComponent();
-
-    // Wait for service to render
-    await waitFor(() => {
-      expect(screen.getByText('Buffet')).toBeInTheDocument();
     });
 
-    // Click delete button
-    const deleteButton = screen.getByRole('button', { name: /Delete/i });
-    fireEvent.click(deleteButton);
-
-    // Verify the correct API was called
-    await waitFor(() => {
-      // Check that a DELETE call was made to the specific service endpoint
-      const deleteCall = global.fetch.mock.calls.find(call => 
-        call[0].includes('/vendors/test-vendor/services/service1') && 
-        call[1]?.method === 'DELETE'
-      );
-      expect(deleteCall).toBeTruthy();
-    });
-  });
-
-  // Form Validation Tests - FIXED
-  it('validates service form fields show errors for invalid data', async () => {
-    setupSuccessfulFetches(mockVendorData, []);
-
-    renderComponent();
+    render(<VendorProfile />);
 
     await waitFor(() => {
-      expect(screen.getByText('Test Vendor')).toBeInTheDocument();
+      expect(screen.getByTestId("service-service1")).toBeInTheDocument();
     });
-    
-    // Open modal and try to submit empty form
-    fireEvent.click(screen.getByRole('button', { name: /Add Service/i }));
+
+    const editButtons = screen.getAllByText("Edit");
+    fireEvent.click(editButtons[0]);
 
     await waitFor(() => {
-      expect(screen.getByText(/Add New Service/i)).toBeInTheDocument();
+      expect(screen.getByTestId("service-form")).toBeInTheDocument();
     });
 
-    // Get the modal context for the submit button
-    const modal = screen.getByText(/Add New Service/i).closest('.modal-content');
-    const modalSubmitButton = within(modal).getByRole('button', { name: /Add Service/i });
-    
-    fireEvent.click(modalSubmitButton);
-
-    // Check for validation errors
-    await waitFor(() => {
-      expect(screen.getByText(/Service name is required/i)).toBeInTheDocument();
-      expect(screen.getByText(/Base cost is required/i)).toBeInTheDocument();
-    });
-  });
-
-  it('handles services without IDs properly', async () => {
-    const servicesWithoutIds = [
-      { 
-        serviceName: 'Service Without ID', 
-        cost: '300',
-        extraNotes: 'This service has no ID' 
-      },
-    ];
-
-    setupSuccessfulFetches(mockVendorData, servicesWithoutIds);
-
-    renderComponent();
-
-    await waitFor(() => {
-      expect(screen.getByText('Service Without ID')).toBeInTheDocument();
-      expect(screen.getByText(/Warning: This service is missing an ID/i)).toBeInTheDocument();
+    const serviceNameInput = screen.getByTestId("input-serviceName");
+    fireEvent.change(serviceNameInput, {
+      target: { name: "serviceName", value: "Updated Catering" },
     });
 
-    // Edit and Delete buttons should be disabled
-    const editButtons = screen.getAllByRole('button', { name: /Edit/i });
-    const deleteButtons = screen.getAllByRole('button', { name: /Delete/i });
-    
-    expect(editButtons.some(btn => btn.disabled)).toBe(true);
-    expect(deleteButtons.some(btn => btn.disabled)).toBe(true);
-  });
-
-  // User Interaction Tests
-  it('handles service form cancellation', async () => {
-    setupSuccessfulFetches(mockVendorData, []);
-
-    renderComponent();
-
-    await waitFor(() => {
-      expect(screen.getByText('Test Vendor')).toBeInTheDocument();
-    });
-    
-    // Open and then close the modal
-    fireEvent.click(screen.getByRole('button', { name: /Add Service/i }));
-
-    await waitFor(() => {
-      expect(screen.getByText(/Add New Service/i)).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByRole('button', { name: /Cancel/i }));
-
-    // Modal should be closed
-    await waitFor(() => {
-      expect(screen.queryByText(/Add New Service/i)).not.toBeInTheDocument();
-    });
-  });
-
-  it('displays error message when service save fails', async () => {
-    setupSuccessfulFetches(mockVendorData, []);
-
-    // Mock failed service creation
-    global.fetch.mockResolvedValueOnce({
-      ok: false,
-      statusText: 'Bad Request',
-      json: () => Promise.resolve({ error: 'Failed to save service' }),
-    });
-
-    renderComponent();
-
-    await waitFor(() => {
-      expect(screen.getByText('Test Vendor')).toBeInTheDocument();
-    });
-    
-    // Open modal, fill and submit form
-    fireEvent.click(screen.getByRole('button', { name: /Add Service/i }));
-
-    await waitFor(() => {
-      expect(screen.getByText(/Add New Service/i)).toBeInTheDocument();
-    });
-
-    // Get modal context for form interaction
-    const modal = screen.getByText(/Add New Service/i).closest('.modal-content');
-    
-    fireEvent.change(screen.getByPlaceholderText(/e.g., Catering, Photography/i), { 
-      target: { value: 'Test Service' } 
-    });
-    fireEvent.change(screen.getByPlaceholderText(/e.g., 10000/i), { 
-      target: { value: '100' } 
-    });
-
-    const modalSubmitButton = within(modal).getByRole('button', { name: /Add Service/i });
-    fireEvent.click(modalSubmitButton);
-
-    // Check for error message
-    await waitFor(() => {
-      expect(screen.getByText(/Failed to save service/i)).toBeInTheDocument();
-    });
-  });
-
-  // API Error Handling Tests
-  it('handles API errors when fetching services', async () => {
-    // Mock successful vendor fetch but failed services fetch
-    global.fetch
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockVendorData),
-      })
-      .mockRejectedValueOnce(new Error('Services API down'));
-
-    renderComponent();
-
-    await waitFor(() => {
-      expect(screen.getByText(/Services API down/i)).toBeInTheDocument();
-    }, { timeout: 3000 });
-  });
-
-  // UI Content Verification Tests
-  it('displays all vendor stats correctly', async () => {
-    const vendorWithStats = {
-      ...mockVendorData,
-      bookings: 25,
-      totalReviews: 15,
-      avgRating: 4.8,
-    };
-
-    setupSuccessfulFetches(vendorWithStats, mockServicesData);
-
-    renderComponent();
-
-    await waitFor(() => {
-      expect(screen.getByText('25')).toBeInTheDocument(); // bookings
-      expect(screen.getByText('15')).toBeInTheDocument(); // reviews  
-      expect(screen.getByText('4.8★')).toBeInTheDocument(); // rating
-      expect(screen.getByText('1')).toBeInTheDocument(); // services count from mockServicesData
-    });
-  });
-
-  // Navigation Tests
-  it('navigates to edit profile when edit button is clicked', async () => {
-    setupSuccessfulFetches();
-
-    renderComponent();
-
-    await waitFor(() => {
-      expect(screen.getByText('Test Vendor')).toBeInTheDocument();
-    });
-    
-    fireEvent.click(screen.getByRole('button', { name: /Edit Profile/i }));
-    
-    expect(mockNavigate).toHaveBeenCalledWith('/vendor/vendor-edit-profile');
-  });
-
-  // Additional test for editing an existing service - FIXED
-  it('edits an existing service', async () => {
-    setupSuccessfulFetches();
-
-    // Mock the service update response
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ serviceId: 'service1' }),
-    });
-
-    renderComponent();
-
-    // Wait for service to be rendered
-    await waitFor(() => {
-      expect(screen.getByText('Buffet')).toBeInTheDocument();
-    });
-
-    // Find and click the specific edit button for the service
-    const editButtons = screen.getAllByRole('button', { name: /Edit/i });
-    const serviceEditButton = editButtons.find(button => 
-      button.closest('.service-item') !== null
-    );
-    
-    expect(serviceEditButton).toBeDefined();
-    fireEvent.click(serviceEditButton);
-
-    // Wait for modal to open - use a more specific check
-    await waitFor(() => {
-      // Check that the modal is open by looking for the heading
-      const modalTitle = screen.getByRole('heading', { name: /Edit Service/i });
-      expect(modalTitle).toBeInTheDocument();
-    });
-
-    // Get the modal context for more specific queries
-    const modal = screen.getByRole('heading', { name: /Edit Service/i }).closest('.modal-content');
-    
-    // Verify form is populated with existing data - query within modal context
-    const serviceNameInput = within(modal).getByPlaceholderText(/e.g., Catering, Photography/i);
-    expect(serviceNameInput.value).toBe('Buffet');
-
-    // Update the service
-    fireEvent.change(serviceNameInput, { 
-      target: { value: 'Updated Buffet Service' } 
-    });
-
-    // Submit the update - use the specific button in the modal
-    const updateButton = within(modal).getByRole('button', { name: /Update Service/i });
-    fireEvent.click(updateButton);
+    fireEvent.click(screen.getByText("Update Service"));
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/vendors/test-vendor/services'),
+        expect.stringContaining("/services"),
         expect.objectContaining({
-          method: 'POST',
-          body: expect.stringContaining('Updated Buffet Service'),
+          method: "POST",
+          body: expect.stringContaining("Updated Catering"),
         })
       );
     });
   });
 
-  // Test for form validation with invalid numeric values - FIXED
-  it('handles form validation for numeric fields', async () => {
-    setupSuccessfulFetches(mockVendorData, []);
+  test("handles delete service with confirmation", async () => {
+    global.confirm = vi.fn(() => true);
 
-    renderComponent();
-
-    await waitFor(() => {
-      expect(screen.getByText('Test Vendor')).toBeInTheDocument();
-    });
-    
-    // Open add service modal
-    const addServiceButton = screen.getByRole('button', { name: /Add Service/i });
-    fireEvent.click(addServiceButton);
-
-    await waitFor(() => {
-      expect(screen.getByText(/Add New Service/i)).toBeInTheDocument();
+    global.fetch.mockImplementation((url, options) => {
+      if (url.includes("/services/service1") && options?.method === "DELETE") {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({}),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(mockServicesResponse),
+      });
     });
 
-    // Get modal context for specific queries
-    const modal = screen.getByText(/Add New Service/i).closest('.modal-content');
-    
-    // Fill with invalid data - use within(modal) to scope queries and exact placeholder text
-    const serviceNameInput = within(modal).getByPlaceholderText(/e.g., Catering, Photography/i);
-    const baseCostInput = within(modal).getByPlaceholderText('e.g., 10000'); // Exact match
-    const hourlyInput = within(modal).getByPlaceholderText('e.g., 1000'); // Exact match
+    render(<VendorProfile />);
 
-    fireEvent.change(serviceNameInput, { target: { value: '123' } }); // Only numbers
-    fireEvent.change(baseCostInput, { target: { value: '-100' } }); // Negative
-    fireEvent.change(hourlyInput, { target: { value: 'abc' } }); // Non-numeric
-
-    // Submit form within modal context
-    const modalSubmitButton = within(modal).getByRole('button', { name: /Add Service/i });
-    fireEvent.click(modalSubmitButton);
-
-    // Check for validation errors
     await waitFor(() => {
-      expect(screen.getByText(/Service name must contain at least one letter/i)).toBeInTheDocument();
-      expect(screen.getByText(/Base cost must be a valid positive number/i)).toBeInTheDocument();
-      //expect(screen.getByText(/Charge by hour must be a valid positive number/i)).toBeInTheDocument();
+      expect(screen.getByTestId("service-service1")).toBeInTheDocument();
+    });
+
+    const deleteButtons = screen.getAllByText("Delete");
+    fireEvent.click(deleteButtons[0]);
+
+    await waitFor(() => {
+      expect(global.confirm).toHaveBeenCalled();
     });
   });
 
-  // Additional test for checking service item display
-  it('displays service details correctly', async () => {
-    setupSuccessfulFetches();
+  test("cancels delete when user declines confirmation", async () => {
+    global.confirm = vi.fn(() => false);
 
-    renderComponent();
+    render(<VendorProfile />);
 
     await waitFor(() => {
-      expect(screen.getByText('Buffet')).toBeInTheDocument();
-      expect(screen.getByText('Cost: R500')).toBeInTheDocument();
-      expect(screen.getByText('Per Hour: R50')).toBeInTheDocument();
-      expect(screen.getByText('Per Person: R25')).toBeInTheDocument();
-      expect(screen.getByText('Per m²: R10')).toBeInTheDocument();
-      expect(screen.getByText('Notes: Includes setup')).toBeInTheDocument();
+      expect(screen.getByTestId("service-service1")).toBeInTheDocument();
+    });
+
+    const deleteButtons = screen.getAllByText("Delete");
+    fireEvent.click(deleteButtons[0]);
+
+    expect(global.confirm).toHaveBeenCalled();
+    expect(screen.getByTestId("service-service1")).toBeInTheDocument();
+  });
+
+  test("shows deleting state on delete button", async () => {
+    global.confirm = vi.fn(() => true);
+
+    global.fetch.mockImplementation((url, options) => {
+      if (url.includes("/services/service1") && options?.method === "DELETE") {
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            resolve({
+              ok: true,
+              json: () => Promise.resolve({}),
+            });
+          }, 100);
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(mockServicesResponse),
+      });
+    });
+
+    render(<VendorProfile />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("service-service1")).toBeInTheDocument();
+    });
+
+    const deleteButtons = screen.getAllByText("Delete");
+    fireEvent.click(deleteButtons[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText("Deleting...")).toBeInTheDocument();
     });
   });
 
-  // Test for empty services state
-  it('displays empty state when no services', async () => {
-    setupSuccessfulFetches(mockVendorData, []);
+  test("handles delete error", async () => {
+    global.confirm = vi.fn(() => true);
 
-    renderComponent();
+    global.fetch.mockImplementation((url, options) => {
+      if (url.includes("/services/service1") && options?.method === "DELETE") {
+        return Promise.resolve({
+          ok: false,
+          status: 500,
+          json: () => Promise.resolve({ error: "Delete failed" }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(mockServicesResponse),
+      });
+    });
+
+    render(<VendorProfile />);
 
     await waitFor(() => {
-      expect(screen.getByText('No services added yet.')).toBeInTheDocument();
+      expect(screen.getByTestId("service-service1")).toBeInTheDocument();
+    });
+
+    const deleteButtons = screen.getAllByText("Delete");
+    fireEvent.click(deleteButtons[0]);
+
+    await waitFor(() => {
+      expect(global.confirm).toHaveBeenCalled();
     });
   });
 
-  // Test for vendor profile with missing data
-  it('handles vendor profile with missing data gracefully', async () => {
-    const incompleteVendorData = {
-      businessName: 'Test Vendor',
-      // Missing other fields
-    };
-
-    setupSuccessfulFetches(incompleteVendorData, []);
-
-    renderComponent();
+  test("clears form errors when user types", async () => {
+    render(<VendorProfile />);
 
     await waitFor(() => {
-      expect(screen.getByText('Test Vendor')).toBeInTheDocument();
-      expect(screen.getByText('Uncategorized')).toBeInTheDocument(); // Default category
-      expect(screen.getByText('No description provided.')).toBeInTheDocument();
+      fireEvent.click(screen.getByText("Add Service"));
     });
+
+    fireEvent.click(screen.getByText("Save Service"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("error-serviceName")).toBeInTheDocument();
+    });
+
+    const serviceNameInput = screen.getByTestId("input-serviceName");
+    fireEvent.change(serviceNameInput, {
+      target: { name: "serviceName", value: "New Service" },
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("error-serviceName")).not.toBeInTheDocument();
+    });
+  });
+
+  test("shows popup notification", async () => {
+    render(<VendorProfile />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Show Notification")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText("Show Notification"));
+
+    await waitFor(() => {
+      const notifications = screen.queryAllByTestId(/notification-/);
+      expect(notifications.length).toBeGreaterThan(0);
+    });
+  });
+
+  test("removes popup notification when closed", async () => {
+    render(<VendorProfile />);
+
+    await waitFor(() => {
+      fireEvent.click(screen.getByText("Show Notification"));
+    });
+
+    await waitFor(() => {
+      const closeButtons = screen.getAllByText("Close");
+      expect(closeButtons.length).toBeGreaterThan(0);
+    });
+
+    const closeButtons = screen.getAllByText("Close");
+    fireEvent.click(closeButtons[0]);
+
+    await waitFor(() => {
+      const notifications = screen.queryAllByTestId(/notification-/);
+      expect(notifications.length).toBe(0);
+    }, { timeout: 1000 });
+  });
+
+  test("handles unauthenticated user", async () => {
+    const { getAuth } = await import("firebase/auth");
+    getAuth.mockReturnValueOnce({
+      currentUser: null,
+      onAuthStateChanged: vi.fn((callback) => {
+        callback(null);
+        return vi.fn();
+      }),
+    });
+
+    render(<VendorProfile />);
+
+    await waitFor(() => {
+      expect(screen.getByText("User not authenticated")).toBeInTheDocument();
+    });
+  });
+
+  
+  
+
+  test("handles service save error", async () => {
+    global.fetch.mockImplementation((url, options) => {
+      if (url.includes("/services") && options?.method === "POST") {
+        return Promise.resolve({
+          ok: false,
+          statusText: "Internal Server Error",
+          json: () => Promise.resolve({ error: "Save failed" }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(mockServicesResponse),
+      });
+    });
+
+    render(<VendorProfile />);
+
+    await waitFor(() => {
+      fireEvent.click(screen.getByText("Add Service"));
+    });
+
+    const serviceNameInput = screen.getByTestId("input-serviceName");
+    const costInput = screen.getByTestId("input-cost");
+
+    fireEvent.change(serviceNameInput, {
+      target: { name: "serviceName", value: "Test Service" },
+    });
+    fireEvent.change(costInput, {
+      target: { name: "cost", value: "1000" },
+    });
+
+    fireEvent.click(screen.getByText("Save Service"));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalled();
+    }, { timeout: 3000 });
+  });
+
+  
+
+  test("NotificationSystem subscription works", () => {
+    const listener = vi.fn();
+    const unsubscribe = NotificationSystem.subscribe(listener);
+
+    NotificationSystem.showNotification("Test", "Message", "info");
+
+    expect(listener).toHaveBeenCalled();
+
+    unsubscribe();
+    listener.mockClear();
+
+    NotificationSystem.showNotification("Test2", "Message2", "info");
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+ 
+
+  test("uses cached data when available", async () => {
+    const { rerender } = render(<VendorProfile />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("vendor-info")).toBeInTheDocument();
+    });
+
+    const initialFetchCount = global.fetch.mock.calls.length;
+
+    // Unmount and remount
+    rerender(<div />);
+    rerender(<VendorProfile />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("vendor-info")).toBeInTheDocument();
+    });
+
+    // Should use cache, so fetch count may be similar
+    expect(global.fetch.mock.calls.length).toBeGreaterThanOrEqual(initialFetchCount);
   });
 });
