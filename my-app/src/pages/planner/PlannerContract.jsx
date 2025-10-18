@@ -14,6 +14,9 @@ import {
 	Edit3,
 	Download,
 	Trash2,
+	Clock,
+	CheckCircle,
+	AlertCircle,
 } from "lucide-react";
 import { auth } from "../../firebase";
 import "./PlannerContract.css";
@@ -112,18 +115,13 @@ const PlannerContract = () => {
 
 	const dataURLtoBlob = (dataURL) => {
 		try {
-			// Handle case where dataURL might already be a blob or URL
 			if (!dataURL || typeof dataURL !== 'string') {
 				throw new Error('Invalid data URL');
 			}
 
 			const arr = dataURL.split(',');
-			
-			// Extract MIME type from the data URL
 			const mimeMatch = arr[0].match(/:(.*?);/);
 			const mime = mimeMatch ? mimeMatch[1] : 'image/png';
-			
-			// Handle both standard data URLs and base64 data
 			const bstr = atob(arr[1]);
 			let n = bstr.length;
 			const u8arr = new Uint8Array(n);
@@ -141,17 +139,14 @@ const PlannerContract = () => {
 		try {
 			const token = await getAuthToken();
 			
-			// Debug: Log what we're receiving
 			console.log('Uploading signature for fieldId:', fieldId);
 			console.log('Data URL type:', typeof dataURL);
 			console.log('Data URL preview:', dataURL ? dataURL.substring(0, 100) : 'null');
 			
-			// Validate data URL before converting
 			if (!dataURL || typeof dataURL !== 'string') {
 				throw new Error('Invalid signature data format: data is not a string');
 			}
 
-			// Check if it's a proper data URL
 			if (!dataURL.includes('data:image')) {
 				console.error('Invalid data URL format. Expected data:image/..., got:', dataURL.substring(0, 50));
 				throw new Error('Invalid signature data format: not a proper image data URL');
@@ -299,12 +294,9 @@ const PlannerContract = () => {
 		try {
 			const finalSignatures = {};
 
-			// Upload all signatures - handle both canvas data URLs and text fields
 			for (const [fieldId, data] of Object.entries(signatureDataParam)) {
-				// Find the field to check its type
 				const field = selectedContract.signatureFields.find(f => f.id === fieldId);
 				
-				// Only upload canvas signatures (signature and initial types with image data)
 				if (field && field.type === 'signature' && data && typeof data === 'string' && data.includes('data:image')) {
 					const savedSignature = await uploadSignature(
 						fieldId,
@@ -314,9 +306,8 @@ const PlannerContract = () => {
 					);
 					finalSignatures[fieldId] = savedSignature;
 				} else {
-					// For non-canvas fields (text, date, checkbox, initials as text), just store the data
 					finalSignatures[fieldId] = {
-						url: data, // Store the text/checkbox value directly
+						url: data,
 						metadata: {
 							fieldId,
 							signerId: auth.currentUser.uid,
@@ -330,7 +321,6 @@ const PlannerContract = () => {
 				}
 			}
 
-			// Get IP address for audit trail
 			const ipAddress = await getUserIPAddress();
 			
 			const signerInfo = {
@@ -341,7 +331,6 @@ const PlannerContract = () => {
 				signerEmail: selectedContract.clientEmail
 			};
 
-			// Finalize the contract
 			const token = await getAuthToken();
 			const response = await fetch(
 				`${API_BASE}/planner/contracts/${selectedContract.id}/finalize`,
@@ -367,7 +356,6 @@ const PlannerContract = () => {
 
 			const result = await response.json();
 
-			// Confirm services
 			await fetch(
 				`${API_BASE}/planner/contracts/${selectedContract.id}/confirm-services`,
 				{
@@ -383,26 +371,21 @@ const PlannerContract = () => {
 				}
 			);
 
-			// Generate and download signature details document with BOTH vendor and client signatures
 			setSaveStatus("Generating signature certificate...");
 
-			// FIXED: Extract vendor signature from selectedContract
-			// The vendor signature is stored in the contract when the vendor signs it
 			const vendorSignature = selectedContract.vendorSignature || null;
 
-			console.log('Vendor signature data:', vendorSignature); // Debug log
+			console.log('Vendor signature data:', vendorSignature);
 
 			const signatureDoc = createSignatureDetailsDocument(
 				selectedContract,
 				signatureDataParam,
 				signerInfo,
-				vendorSignature // Pass the vendor signature here
+				vendorSignature
 			);
 
-			// Auto-download the signature details HTML file
 			signatureDoc.download();
 
-			// Show success message with instructions
 			setTimeout(() => {
 				alert(
 					`Successfully signed!\n\n` +
@@ -415,7 +398,6 @@ const PlannerContract = () => {
 				);
 			}, 500);
 
-			// Update contracts list
 			setContracts((prev) =>
 				prev.map((c) =>
 					c.id === selectedContract.id
@@ -429,7 +411,6 @@ const PlannerContract = () => {
 			setSignatureData({});
 			setSaveStatus("");
 
-			// Refresh contracts
 			await fetchContracts();
 		} catch (err) {
 			console.error("Error finalizing contract:", err);
@@ -576,121 +557,103 @@ const PlannerContract = () => {
 
 	const EventCard = React.memo(({ eventId, eventData }) => {
 		return (
-			<section className="event-card">
+			<article className="event-card">
 				<section className="event-info">
 					<p>
 						<FileText size={16} /> {eventData.eventName}
 					</p>
 					<p>
-						<Calendar size={16} /> Date: {eventData.eventDate
+						<Calendar size={16} /> {eventData.eventDate
 							? formatDate(eventData.eventDate)
 							: "No date"}
 					</p>
 				</section>
-				<section className="contract-section">
+				<section className="contracts-list">
 					{eventData.contracts.length === 0 ? (
 						<p>No contracts for this event.</p>
 					) : (
-						<section className="contracts-list">
-							{eventData.contracts.map((contract) => {
-								const isSigned = isContractSignedByClient(contract);
-								const statusDisplay = getContractStatusDisplay(contract);
-								
-								return (
-									<section key={contract.id} className="contract-row">
-										<section className="contract-info">
-											<p className="file-name">
-												<button
-													className="file-name-btn"
-													onClick={() => {
-														setSelectedContract(
-															contract
-														);
-														loadDraftSignatures(
-															contract
-														);
-														setShowSignModal(true);
-													}}
-													title="View and sign contract"
-												>
-													{contract.fileName}
-												</button>
-												<span>
-													(
-													{contract.lastedited?.seconds
-														? new Date(
-																contract.lastedited.seconds * 1000
-														  ).toLocaleDateString()
-														: "Unknown date"}
-													)
-												</span>
-											</p>
-											<span
-												className={`status-badge status-${statusDisplay.class}`}
-											>
-												{statusDisplay.text}
-											</span>
-											{contract.signatureWorkflow?.isElectronic && (
-												<span
-													className={`signature-badge ${contract.signatureWorkflow.workflowStatus}`}
-												>
-													{contract.signatureWorkflow.workflowStatus.replace(
-														"_",
-														" "
-													)}
-												</span>
-											)}
-										</section>
-										<section className="contract-actions">
+						eventData.contracts.map((contract) => {
+							const isSigned = isContractSignedByClient(contract);
+							const statusDisplay = getContractStatusDisplay(contract);
+							
+							return (
+								<article key={contract.id} className="contract-item">
+									<section className="contract-details">
+										<section className="contract-name-row">
 											<button
-												className="sign-btn"
+												className="file-name-btn"
 												onClick={() => {
 													setSelectedContract(contract);
 													loadDraftSignatures(contract);
 													setShowSignModal(true);
 												}}
-												title={isSigned ? "Contract already signed" : "Sign contract"}
-												disabled={isSigned}
+												title="View and sign contract"
 											>
-												<Edit3 size={12} />
-												{isSigned ? "Signed" : "Sign"}
-											</button>
-											<button
-												className="download-btn small"
-												onClick={() =>
-													handleDownloadContract(
-														contract.contractUrl,
-														contract.fileName
-													)
-												}
-												title="Download contract"
-											>
-												<Download size={12} />
-												Download
-											</button>
-											<button
-												className="delete-btn small"
-												onClick={() =>
-													deleteContract(
-														contract.eventId,
-														contract.id,
-														contract.contractUrl,
-														contract.vendorId
-													)
-												}
-												title="Delete contract"
-											>
-												<Trash2 size={12} />
-												Delete
+												{contract.fileName}
 											</button>
 										</section>
+										<section className="contract-meta">
+											<span className="last-edited">
+												Last edited: {contract.lastedited?.seconds
+													? new Date(
+															contract.lastedited.seconds * 1000
+													  ).toLocaleDateString()
+													: "Unknown"}
+											</span>
+											<span className={`status-badge status-${statusDisplay.class}`}>
+												{statusDisplay.text}
+											</span>
+										</section>
 									</section>
-								);
-							})}
-						</section>
+									<section className="contract-actions">
+										<button
+											className="btn-sign"
+											onClick={() => {
+												setSelectedContract(contract);
+												loadDraftSignatures(contract);
+												setShowSignModal(true);
+											}}
+											title={isSigned ? "Contract already signed" : "Sign contract"}
+											disabled={isSigned}
+										>
+											<Edit3 size={14} />
+											{isSigned ? "Signed" : "Sign"}
+										</button>
+										<button
+											className="btn-download"
+											onClick={() =>
+												handleDownloadContract(
+													contract.contractUrl,
+													contract.fileName
+												)
+											}
+											title="Download contract"
+										>
+											<Download size={14} />
+											Download
+										</button>
+										<button
+											className="btn-delete"
+											onClick={() =>
+												deleteContract(
+													contract.eventId,
+													contract.id,
+													contract.contractUrl,
+													contract.vendorId
+												)
+											}
+											title="Delete contract"
+										>
+											<Trash2 size={14} />
+											Delete
+										</button>
+									</section>
+								</article>
+							);
+						})
 					)}
 				</section>
-			</section>
+			</article>
 		);
 	});
 
@@ -709,10 +672,12 @@ const PlannerContract = () => {
 
 	if (contracts.length === 0) {
 		return (
-			<section className="events-page">
-				<header>
-					<h1>Contract Management</h1>
-					<p>Manage vendor contracts for your events.</p>
+			<section className="contracts-page">
+				<header className="contracts-header">
+					<section className="header-left">
+						<h1 className="contracts-title">Contract Management</h1>
+						<p className="contracts-subtitle">Manage your vendor contracts!</p>
+					</section>
 				</header>
 				<p className="no-events">No contracts found.</p>
 			</section>
@@ -720,21 +685,11 @@ const PlannerContract = () => {
 	}
 
 	return (
-		<section className="events-page">
-			<header>
-				<h1>Contract Management</h1>
-				<p>Manage vendor contracts for your events.</p>
-				<section className="stats-summary">
-					<section className="stat-item">
-						<FileText size={20} />
-						<span>Total Contracts: {totalContracts}</span>
-					</section>
-					<section className="stat-item pending-stat">
-						<span>Pending Signatures: {pendingContracts}</span>
-					</section>
-					<section className="stat-item signed-stat">
-						<span>Signed Contracts: {signedContracts}</span>
-					</section>
+		<section className="contracts-page">
+			<header className="contracts-header">
+				<section className="header-left">
+					<h1 className="contracts-title">Contract Management</h1>
+					<p className="contracts-subtitle">Manage your vendor contracts!</p>
 				</section>
 				<section className="search-container">
 					<Search size={20} />
@@ -755,21 +710,62 @@ const PlannerContract = () => {
 					)}
 				</section>
 			</header>
+
+			<section className="summary-grid">
+				<article className="summary-card">
+					<section className="summary-card-header">
+						<section className="summary-icon blue">
+							<FileText size={24} />
+						</section>
+					</section>
+					<p className="summary-label">Total Contracts</p>
+					<h2 className="summary-value">{totalContracts}</h2>
+					<p className="summary-subtext">Active contracts</p>
+				</article>
+
+				<article className="summary-card">
+					<section className="summary-card-header">
+						<section className="summary-icon yellow">
+							<Clock size={24} />
+						</section>
+					</section>
+					<p className="summary-label">Pending Signatures</p>
+					<h2 className="summary-value">{pendingContracts}</h2>
+					<p className="summary-subtext">Awaiting your signature</p>
+				</article>
+
+				<article className="summary-card">
+					<section className="summary-card-header">
+						<section className="summary-icon green">
+							<CheckCircle size={24} />
+						</section>
+					</section>
+					<p className="summary-label">Signed Contracts</p>
+					<h2 className="summary-value">{signedContracts}</h2>
+					<p className="summary-subtext">Completed contracts</p>
+				</article>
+			</section>
+
 			<section className="events-section">
-				<h2 className="section-title">
-					<Calendar size={20} />
-					Your Events ({filteredEventIds.length})
-				</h2>
-				<section className="events-list">
-					{filteredEventIds.map((eventId) => (
-						<EventCard
-							key={eventId}
-							eventId={eventId}
-							eventData={groupedContracts[eventId]}
-						/>
-					))}
+				<section className="section-header">
+					<h2 className="section-title">
+						<Calendar size={20} />
+						Your Events ({filteredEventIds.length})
+					</h2>
+				</section>
+				<section className="section-content">
+					<section className="events-list">
+						{filteredEventIds.map((eventId) => (
+							<EventCard
+								key={eventId}
+								eventId={eventId}
+								eventData={groupedContracts[eventId]}
+							/>
+						))}
+					</section>
 				</section>
 			</section>
+
 			{debouncedSearchTerm && filteredEventIds.length === 0 && (
 				<section className="no-results">
 					<p>No events found matching "{debouncedSearchTerm}"</p>
@@ -801,9 +797,9 @@ const PlannerContract = () => {
 			</Popup>
 
 			{saveStatus && (
-				<div className="toast-notification">
+				<section className="toast-notification">
 					{saveStatus}
-				</div>
+				</section>
 			)}
 		</section>
 	);
