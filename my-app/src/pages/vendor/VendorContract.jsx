@@ -29,7 +29,8 @@ import { v4 as uuidv4 } from "uuid";
 import "./VendorContract.css";
 import Popup from "../general/popup/Popup.jsx";
 
-// Custom debounce hook
+// ... keep existing code (useDebounce hook) ...
+
 const useDebounce = (value, delay) => {
   const [debouncedValue, setDebouncedValue] = useState(value);
   useEffect(() => {
@@ -40,6 +41,7 @@ const useDebounce = (value, delay) => {
 };
 
 const VendorContract = ({ setActivePage }) => {
+  // ... keep existing code (all state declarations) ...
   const [clients, setClients] = useState([]);
   const [allContracts, setAllContracts] = useState([]);
   const [uploading, setUploading] = useState(null);
@@ -50,12 +52,10 @@ const VendorContract = ({ setActivePage }) => {
   const [showContractModal, setShowContractModal] = useState(false);
   const [iframeSrc, setIframeSrc] = useState(null);
 
-  // Final pricing states
   const [showPricingModal, setShowPricingModal] = useState(false);
   const [currentClient, setCurrentClient] = useState(null);
   const [currentFile, setCurrentFile] = useState(null);
-  const [currentReplacingContractId, setCurrentReplacingContractId] =
-    useState(null);
+  const [currentReplacingContractId, setCurrentReplacingContractId] = useState(null);
   const [currentSignatureFields, setCurrentSignatureFields] = useState([]);
   const [finalPrices, setFinalPrices] = useState({});
   const [clientServices, setClientServices] = useState([]);
@@ -66,8 +66,8 @@ const VendorContract = ({ setActivePage }) => {
   const cacheTTL = 5 * 60 * 1000;
 
   const vendorId = auth.currentUser?.uid;
-  
-  // Function to fetch services for a client
+
+  // ... keep existing code (all helper functions) ...
   const fetchClientServices = useCallback(async (eventId, vendorId) => {
     if (!auth.currentUser) return [];
     setLoadingServices(true);
@@ -84,7 +84,6 @@ const VendorContract = ({ setActivePage }) => {
       return data.services || [];
     } catch (error) {
       console.error("Error fetching client services:", error);
-      // Fallback mock data for development
       return [
         {
           id: "1",
@@ -107,7 +106,6 @@ const VendorContract = ({ setActivePage }) => {
     }
   }, []);
 
-  // Function to update final prices in the event
   const updateEventFinalPrices = useCallback(
     async (eventId, vendorId, pricesData) => {
       if (!auth.currentUser) return;
@@ -123,9 +121,7 @@ const VendorContract = ({ setActivePage }) => {
           body: JSON.stringify({ finalPrices: pricesData }),
         });
         if (!res.ok) {
-          throw new Error(
-            `Failed to update final prices: ${res.status}`
-          );
+          throw new Error(`Failed to update final prices: ${res.status}`);
         }
         console.log("Final prices updated successfully");
       } catch (error) {
@@ -136,7 +132,6 @@ const VendorContract = ({ setActivePage }) => {
     []
   );
 
-  // Function to fetch contract final prices
   const fetchContractFinalPrices = useCallback(async (eventId, vendorId) => {
     if (!auth.currentUser) return {};
     try {
@@ -146,9 +141,7 @@ const VendorContract = ({ setActivePage }) => {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
-        throw new Error(
-          `Failed to fetch contract prices: ${res.status}`
-        );
+        throw new Error(`Failed to fetch contract prices: ${res.status}`);
       }
       const data = await res.json();
       return data.finalPrices || {};
@@ -174,16 +167,10 @@ const VendorContract = ({ setActivePage }) => {
           vendorId,
           "Contracts"
         );
-        const vendorContractsSnapshot = await getDocs(
-          vendorContractsRef
-        );
+        const vendorContractsSnapshot = await getDocs(vendorContractsRef);
         for (const doc of vendorContractsSnapshot.docs) {
           const contractData = { id: doc.id, ...doc.data() };
-          // Fetch final prices for each contract
-          const prices = await fetchContractFinalPrices(
-            eventDoc.id,
-            vendorId
-          );
+          const prices = await fetchContractFinalPrices(eventDoc.id, vendorId);
           contractData.finalPrices = prices;
           contractsData.push(contractData);
         }
@@ -212,8 +199,7 @@ const VendorContract = ({ setActivePage }) => {
     }
     try {
       const token = await auth.currentUser.getIdToken();
-      const url =
-        "https://us-central1-planit-sdp.cloudfunctions.net/api/vendor/bookings";
+      const url = "https://us-central1-planit-sdp.cloudfunctions.net/api/vendor/bookings";
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -248,6 +234,7 @@ const VendorContract = ({ setActivePage }) => {
     }
   }, [cacheKey, cacheTTL]);
 
+  // ... keep existing code (useEffect hooks) ...
   useEffect(() => {
     const initializeContracts = async () => {
       if (auth.currentUser) {
@@ -265,10 +252,7 @@ const VendorContract = ({ setActivePage }) => {
               contractUrl: client.contractUrl,
               googleApisUrl: client.contractUrl,
               fileName: client.contractUrl
-                ? client.contractUrl
-                    .split("/")
-                    .pop()
-                    .split("?")[0]
+                ? client.contractUrl.split("/").pop().split("?")[0]
                 : "unknown.pdf",
               fileSize: 0,
               status: "active",
@@ -281,9 +265,7 @@ const VendorContract = ({ setActivePage }) => {
                 createdAt: new Date().toISOString(),
                 sentAt: null,
                 completedAt: new Date().toISOString(),
-                expirationDate: new Date(
-                  Date.now() + 30 * 24 * 60 * 60 * 1000
-                ).toISOString(),
+                expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
                 reminderSettings: {
                   enabled: true,
                   frequency: 3,
@@ -306,12 +288,9 @@ const VendorContract = ({ setActivePage }) => {
             }));
 
           setAllContracts((prev) => {
-            const existingEventIds = prev.map(
-              (contract) => contract.eventId
-            );
+            const existingEventIds = prev.map((contract) => contract.eventId);
             const newContracts = existingContracts.filter(
-              (contract) =>
-                !existingEventIds.includes(contract.eventId)
+              (contract) => !existingEventIds.includes(contract.eventId)
             );
             return [...prev, ...newContracts];
           });
@@ -336,16 +315,14 @@ const VendorContract = ({ setActivePage }) => {
   }, [fetchClients]);
 
   useEffect(() => {
-    // Refresh contracts when returning from signature setup
     const handleStorageChange = () => {
       loadContractsFromFirestore();
     };
-    
     window.addEventListener('contractUpdated', handleStorageChange);
     return () => window.removeEventListener('contractUpdated', handleStorageChange);
   }, [loadContractsFromFirestore]);
 
-  // Group contracts by eventId for multiple contracts per client
+  // ... keep existing code (groupedContracts, counters, helper functions) ...
   const groupedContracts = useMemo(() => {
     const groups = {};
     allContracts.forEach((contract) => {
@@ -357,14 +334,9 @@ const VendorContract = ({ setActivePage }) => {
     return groups;
   }, [allContracts]);
 
-  // Persistent counters based on Firestore data
   const clientsWithContracts = useMemo(() => {
-    const eventIdsWithContracts = new Set(
-      allContracts.map((c) => c.eventId)
-    );
-    return clients.filter((client) =>
-      eventIdsWithContracts.has(client.eventId)
-    );
+    const eventIdsWithContracts = new Set(allContracts.map((c) => c.eventId));
+    return clients.filter((client) => eventIdsWithContracts.has(client.eventId));
   }, [clients, allContracts]);
 
   const uploadedCount = clientsWithContracts.length;
@@ -373,26 +345,18 @@ const VendorContract = ({ setActivePage }) => {
     (c) => c.signatureWorkflow?.isElectronic
   ).length;
 
-  // Helper function to create signers from signature fields
   const createSignersFromFields = (signatureFields, clientInfo) => {
     const signers = new Map();
-
     signatureFields.forEach((field) => {
       if (!signers.has(field.signerEmail)) {
         signers.set(field.signerEmail, {
           id: uuidv4(),
           role: field.signerRole,
-          name:
-            field.signerRole === "client"
-              ? clientInfo.name
-              : "Vendor Name",
+          name: field.signerRole === "client" ? clientInfo.name : "Vendor Name",
           email: field.signerEmail,
           status: "pending",
           accessToken: uuidv4(),
-          accessCode:
-            field.signerRole === "client"
-              ? generateAccessCode()
-              : null,
+          accessCode: field.signerRole === "client" ? generateAccessCode() : null,
           invitedAt: null,
           accessedAt: null,
           signedAt: null,
@@ -402,11 +366,9 @@ const VendorContract = ({ setActivePage }) => {
         });
       }
     });
-
     return Array.from(signers.values());
   };
 
-  // Generate random access code for additional security
   const generateAccessCode = () => {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
   };
@@ -441,21 +403,13 @@ const VendorContract = ({ setActivePage }) => {
           fileSize,
           status: "active",
           finalPrices: finalPricesData,
-
-          // Enhanced signature workflow
           signatureWorkflow: {
             isElectronic: signatureFields.length > 0,
-            workflowStatus:
-              signatureFields.length > 0 ? "draft" : "completed",
+            workflowStatus: signatureFields.length > 0 ? "draft" : "completed",
             createdAt: new Date().toISOString(),
             sentAt: null,
-            completedAt:
-              signatureFields.length === 0
-                ? new Date().toISOString()
-                : null,
-            expirationDate: new Date(
-              Date.now() + 30 * 24 * 60 * 60 * 1000
-            ).toISOString(),
+            completedAt: signatureFields.length === 0 ? new Date().toISOString() : null,
+            expirationDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
             reminderSettings: {
               enabled: true,
               frequency: 3,
@@ -463,16 +417,8 @@ const VendorContract = ({ setActivePage }) => {
               lastReminderSent: null,
             },
           },
-
           signatureFields: signatureFields,
-          signers:
-            signatureFields.length > 0
-              ? createSignersFromFields(
-                  signatureFields,
-                  clientInfo
-                )
-              : [],
-
+          signers: signatureFields.length > 0 ? createSignersFromFields(signatureFields, clientInfo) : [],
           auditTrail: [
             {
               id: uuidv4(),
@@ -480,15 +426,10 @@ const VendorContract = ({ setActivePage }) => {
               action: "contract_created",
               actor: auth.currentUser?.email || "vendor",
               actorRole: "vendor",
-              details: `Contract ${
-                signatureFields.length > 0
-                  ? "created with e-signature fields"
-                  : "uploaded as traditional contract"
-              } with final pricing`,
+              details: `Contract ${signatureFields.length > 0 ? "created with e-signature fields" : "uploaded as traditional contract"} with final pricing`,
               ipAddress: "system",
             },
           ],
-
           documentVersions: [
             {
               version: 1,
@@ -498,7 +439,6 @@ const VendorContract = ({ setActivePage }) => {
               description: "Original contract document",
             },
           ],
-
           firstuploaded: currentTime,
           lastedited: currentTime,
           createdAt: currentTime,
@@ -508,36 +448,20 @@ const VendorContract = ({ setActivePage }) => {
               uploadDate: currentTime,
               fileName,
               fileSize,
-              action: replacingContractId
-                ? `replacement for ${replacingContractId}`
-                : "initial_upload",
+              action: replacingContractId ? `replacement for ${replacingContractId}` : "initial_upload",
             },
           ],
         };
 
-        const contractRef = doc(
-          db,
-          "Event",
-          eventId,
-          "Vendors",
-          vendorId,
-          "Contracts",
-          contractId
-        );
+        const contractRef = doc(db, "Event", eventId, "Vendors", vendorId, "Contracts", contractId);
         await setDoc(contractRef, newContract);
 
-        // Update final prices in the event
         if (Object.keys(finalPricesData).length > 0) {
-          await updateEventFinalPrices(
-            eventId,
-            vendorId,
-            finalPricesData
-          );
+          await updateEventFinalPrices(eventId, vendorId, finalPricesData);
         }
 
         setAllContracts((prev) => [...prev, newContract]);
 
-        // Update client with latest contractUrl
         setClients((prev) =>
           prev.map((c) =>
             c.eventId === eventId
@@ -545,23 +469,15 @@ const VendorContract = ({ setActivePage }) => {
                   ...c,
                   contractUrl: contractUrl,
                   lastedited: currentTime,
-                  firstuploaded:
-                    c.firstuploaded || currentTime,
-                  signatureStatus:
-                    signatureFields.length > 0
-                      ? "pending_signature"
-                      : "completed",
+                  firstuploaded: c.firstuploaded || currentTime,
+                  signatureStatus: signatureFields.length > 0 ? "pending_signature" : "completed",
                 }
               : c
           )
         );
         console.log(
-          `${
-            replacingContractId ? "Updated" : "New"
-          } contract saved with${
-            signatureFields.length > 0
-              ? " signature fields"
-              : "out signature fields"
+          `${replacingContractId ? "Updated" : "New"} contract saved with${
+            signatureFields.length > 0 ? " signature fields" : "out signature fields"
           } and final pricing:`,
           contractId
         );
@@ -576,12 +492,7 @@ const VendorContract = ({ setActivePage }) => {
   );
 
   const handleFileUpload = useCallback(
-    async (
-      eventId,
-      file,
-      replacingContractId = null,
-      signatureFields = []
-    ) => {
+    async (eventId, file, replacingContractId = null, signatureFields = []) => {
       if (!auth.currentUser || !file) return;
       const allowedTypes = [
         "application/pdf",
@@ -589,15 +500,11 @@ const VendorContract = ({ setActivePage }) => {
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       ];
       if (!allowedTypes.includes(file.type)) {
-        alert(
-          "Invalid file type. Please upload PDF, DOC, or DOCX files only."
-        );
+        alert("Invalid file type. Please upload PDF, DOC, or DOCX files only.");
         return;
       }
       if (file.size > 10 * 1024 * 1024) {
-        alert(
-          "File size too large. Please upload files smaller than 10MB."
-        );
+        alert("File size too large. Please upload files smaller than 10MB.");
         return;
       }
 
@@ -607,17 +514,14 @@ const VendorContract = ({ setActivePage }) => {
         return;
       }
 
-      // Store upload details and show pricing modal
       setCurrentClient(clientInfo);
       setCurrentFile(file);
       setCurrentReplacingContractId(replacingContractId);
       setCurrentSignatureFields(signatureFields);
 
-      // Fetch client services
       const services = await fetchClientServices(eventId, vendorId);
       setClientServices(services);
 
-      // Initialize final prices object
       const initialPrices = {};
       services.forEach((service) => {
         initialPrices[service.id] = "";
@@ -632,7 +536,6 @@ const VendorContract = ({ setActivePage }) => {
   const handlePricingSubmit = async () => {
     if (!currentFile || !currentClient) return;
 
-    // Validate that all prices are filled
     const emptyPrices = Object.values(finalPrices).some(
       (price) => price === "" || price === null || price === undefined
     );
@@ -646,18 +549,14 @@ const VendorContract = ({ setActivePage }) => {
     try {
       const vendorId = auth.currentUser.uid;
       const isUpdate = currentReplacingContractId !== null;
-      const fileName = `Contracts/${
-        currentClient.eventId
-      }/${vendorId}/${uuidv4()}-${currentFile.name}`;
+      const fileName = `Contracts/${currentClient.eventId}/${vendorId}/${uuidv4()}-${currentFile.name}`;
       const storageRef = ref(storage, fileName);
       const snapshot = await uploadBytes(storageRef, currentFile);
       const downloadUrl = await getDownloadURL(snapshot.ref);
 
-      // Convert prices to proper format
       const formattedPrices = {};
       Object.keys(finalPrices).forEach((serviceId) => {
-        formattedPrices[serviceId] =
-          parseFloat(finalPrices[serviceId]) || 0;
+        formattedPrices[serviceId] = parseFloat(finalPrices[serviceId]) || 0;
       });
 
       const contractId = await createOrUpdateContractEntry(
@@ -673,18 +572,11 @@ const VendorContract = ({ setActivePage }) => {
       );
 
       if (currentSignatureFields.length > 0) {
-        alert(
-          "Contract uploaded successfully with final pricing! You can now send it for electronic signature."
-        );
+        alert("Contract uploaded successfully with final pricing! You can now send it for electronic signature.");
       } else {
-        alert(
-          isUpdate
-            ? "Contract updated successfully with final pricing!"
-            : "Contract uploaded successfully with final pricing!"
-        );
+        alert(isUpdate ? "Contract updated successfully with final pricing!" : "Contract uploaded successfully with final pricing!");
       }
 
-      // Reset states
       setShowPricingModal(false);
       setCurrentClient(null);
       setCurrentFile(null);
@@ -696,11 +588,7 @@ const VendorContract = ({ setActivePage }) => {
       return contractId;
     } catch (err) {
       console.error("Upload error:", err);
-      alert(
-        `Failed to ${
-          currentReplacingContractId ? "update" : "upload"
-        } contract: ${err.message}`
-      );
+      alert(`Failed to ${currentReplacingContractId ? "update" : "upload"} contract: ${err.message}`);
       return null;
     } finally {
       setUploading(null);
@@ -718,46 +606,21 @@ const VendorContract = ({ setActivePage }) => {
       }
       try {
         const vendorId = auth.currentUser.uid;
-        const contractRef = doc(
-          db,
-          "Event",
-          eventId,
-          "Vendors",
-          vendorId,
-          "Contracts",
-          contractId
-        );
+        const contractRef = doc(db, "Event", eventId, "Vendors", vendorId, "Contracts", contractId);
         await deleteDoc(contractRef);
         setAllContracts((prev) => {
-          const updatedContracts = prev.filter(
-            (contract) => contract.id !== contractId
-          );
+          const updatedContracts = prev.filter((contract) => contract.id !== contractId);
           return updatedContracts;
         });
-        // Update client contractUrl if no contracts remain for the event
         setClients((prev) =>
           prev.map((c) => {
             if (c.eventId === eventId) {
-              const remainingContracts =
-                groupedContracts[eventId]?.filter(
-                  (c) => c.id !== contractId
-                ) || [];
+              const remainingContracts = groupedContracts[eventId]?.filter((c) => c.id !== contractId) || [];
               return {
                 ...c,
-                contractUrl:
-                  remainingContracts.length > 0
-                    ? remainingContracts[
-                        remainingContracts.length - 1
-                      ].contractUrl
-                    : null,
-                firstuploaded:
-                  remainingContracts.length > 0
-                    ? c.firstuploaded
-                    : null,
-                lastedited:
-                  remainingContracts.length > 0
-                    ? c.lastedited
-                    : null,
+                contractUrl: remainingContracts.length > 0 ? remainingContracts[remainingContracts.length - 1].contractUrl : null,
+                firstuploaded: remainingContracts.length > 0 ? c.firstuploaded : null,
+                lastedited: remainingContracts.length > 0 ? c.lastedited : null,
               };
             }
             return c;
@@ -772,9 +635,7 @@ const VendorContract = ({ setActivePage }) => {
     [groupedContracts]
   );
 
-  // Function to handle signature setup - Navigate to separate page
   const handleSetupSignatures = (contract) => {
-    // Store contract data in localStorage for the signature page to access
     localStorage.setItem('contractForSignature', JSON.stringify(contract));
     setActivePage('setup-signature');
   };
@@ -782,48 +643,29 @@ const VendorContract = ({ setActivePage }) => {
   const filteredClients = useMemo(() => {
     return clients.filter(
       (client) =>
-        client.name
-          .toLowerCase()
-          .includes(debouncedSearchTerm.toLowerCase()) ||
-        client.event
-          .toLowerCase()
-          .includes(debouncedSearchTerm.toLowerCase()) ||
-        client.email
-          .toLowerCase()
-          .includes(debouncedSearchTerm.toLowerCase())
+        client.name.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        client.event.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        client.email.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
     );
   }, [clients, debouncedSearchTerm]);
 
   const uploadedClients = useMemo(() => {
-    const eventIdsWithContracts = new Set(
-      allContracts.map((c) => c.eventId)
-    );
-    return filteredClients.filter((client) =>
-      eventIdsWithContracts.has(client.eventId)
-    );
+    const eventIdsWithContracts = new Set(allContracts.map((c) => c.eventId));
+    return filteredClients.filter((client) => eventIdsWithContracts.has(client.eventId));
   }, [filteredClients, allContracts]);
 
   const pendingClients = useMemo(() => {
-    const eventIdsWithContracts = new Set(
-      allContracts.map((c) => c.eventId)
-    );
-    return filteredClients.filter(
-      (client) => !eventIdsWithContracts.has(client.eventId)
-    );
+    const eventIdsWithContracts = new Set(allContracts.map((c) => c.eventId));
+    return filteredClients.filter((client) => !eventIdsWithContracts.has(client.eventId));
   }, [filteredClients, allContracts]);
 
-  const getContractInfo = useCallback(
-    (eventId) => groupedContracts[eventId] || [],
-    [groupedContracts]
-  );
+  const getContractInfo = useCallback((eventId) => groupedContracts[eventId] || [], [groupedContracts]);
 
   const viewContractDetails = useCallback((contract) => {
     setSelectedContract(contract);
     setShowContractModal(true);
     if (contract.fileName.toLowerCase().endsWith(".pdf")) {
-      setIframeSrc(
-        `${contract.contractUrl}#toolbar=1&navpanes=0&scrollbar=1`
-      );
+      setIframeSrc(`${contract.contractUrl}#toolbar=1&navpanes=0&scrollbar=1`);
     }
   }, []);
 
@@ -836,492 +678,339 @@ const VendorContract = ({ setActivePage }) => {
 
   const getTotalContractValue = (finalPrices) => {
     if (!finalPrices || Object.keys(finalPrices).length === 0) return 0;
-    return Object.values(finalPrices).reduce(
-      (sum, price) => sum + (parseFloat(price) || 0),
-      0
-    );
+    return Object.values(finalPrices).reduce((sum, price) => sum + (parseFloat(price) || 0), 0);
   };
 
-  const ClientCard = React.memo(({ client, isUploaded }) => {
+  const handleDownloadContract = (contractUrl, fileName) => {
+    const link = document.createElement("a");
+    link.href = contractUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const ClientCard = React.memo(({ client }) => {
     const eventContracts = getContractInfo(client.eventId);
 
-    const handleDownloadContract = (contractUrl, fileName) => {
-      const link = document.createElement("a");
-      link.href = contractUrl;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    };
-
     return (
-      <div className="client-card-container">
-        <div className="client-main-card">
-          <div className="client-header">
-            <div className="client-info">
-              <h3 className="client-name">
-                <User size={16} />
-                {client.name}
-              </h3>
-              <p className="client-email">
-                <Mail size={16} />
-                {client.email}
-              </p>
-              <p className="event-name">
-                <Calendar size={16} />
-                {client.event}
-              </p>
-            </div>
-            {eventContracts.length > 0 && (
-              <div className="contract-summary">
-                <div className="contract-count">
-                  <FileText size={16} />
-                  <span>
-                    {eventContracts.length} Contract
-                    {eventContracts.length !== 1 ? "s" : ""}
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
+      <article className="vendor-client-card">
+        <section className="vendor-client-info-section">
+          <p>
+            <User size={16} />
+            {client.name}
+          </p>
+          <p>
+            <Mail size={16} />
+            {client.email}
+          </p>
+          <p>
+            <Calendar size={16} />
+            {client.event}
+          </p>
+        </section>
 
-          <div className="contract-actions-horizontal">
-            <label className="upload-btn primary">
-              <Plus size={16} />
-              Add Contract
-              <input
-                type="file"
-                accept=".pdf,.doc,.docx"
-                hidden
-                disabled={uploading === client.eventId}
-                onChange={(e) =>
-                  e.target.files[0] &&
-                  handleFileUpload(
-                    client.eventId,
-                    e.target.files[0]
-                  )
-                }
-              />
-            </label>
-          </div>
+        <section className="vendor-upload-section">
+          <label className="vendor-upload-btn">
+            <Plus size={16} />
+            Add Contract
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx"
+              hidden
+              disabled={uploading === client.eventId}
+              onChange={(e) => e.target.files[0] && handleFileUpload(client.eventId, e.target.files[0])}
+            />
+          </label>
+        </section>
 
-          {eventContracts.length > 0 && (
-            <div className="contracts-section">
-              <div className="section-header">
-                <h3 className="section-title">
-                  <FileText size={18} />
-                  Client Contracts
-                  <span className="count-badge">
-                    {eventContracts.length}
-                  </span>
-                </h3>
-              </div>
-              <div className="contracts-list">
-                {eventContracts.map((contract) => (
-                  <div
-                    key={contract.id}
-                    className="contract-card"
+        {eventContracts.length > 0 ? (
+          <section className="vendor-contracts-list">
+            {eventContracts.map((contract) => (
+              <article key={contract.id} className="vendor-contract-item">
+                <section className="vendor-contract-details">
+                  <section className="vendor-contract-name-row">
+                    <button
+                      className="vendor-file-name-btn"
+                      onClick={() => viewContractDetails(contract)}
+                      title="Click to view contract details"
+                    >
+                      <FileText size={16} />
+                      {contract.fileName}
+                    </button>
+                  </section>
+                  <section className="vendor-contract-meta">
+                    <span className="vendor-last-edited">
+                      <Clock size={14} />
+                      {new Date(contract.lastedited.seconds * 1000).toLocaleDateString()}
+                    </span>
+                    {contract.finalPrices && Object.keys(contract.finalPrices).length > 0 && (
+                      <span className="vendor-contract-amount">
+                        <DollarSign size={14} />
+                        {formatCurrency(getTotalContractValue(contract.finalPrices))}
+                      </span>
+                    )}
+                    <span className={`vendor-status-badge status-${contract.status}`}>
+                      {contract.status}
+                    </span>
+                    {contract.signatureWorkflow?.isElectronic && (
+                      <span className={`vendor-status-badge status-${contract.signatureWorkflow.workflowStatus}`}>
+                        {contract.signatureWorkflow.workflowStatus.replace("_", " ")}
+                      </span>
+                    )}
+                  </section>
+                </section>
+
+                <section className="vendor-contract-actions">
+                  <button
+                    className="vendor-btn-sign"
+                    onClick={() => handleSetupSignatures(contract)}
+                    title="Setup electronic signature"
                   >
-                    <div className="contract-card-left">
-                      <div className="contract-document-info">
-                        <button
-                          className="contract-name-btn"
-                          onClick={() =>
-                            viewContractDetails(
-                              contract
-                            )
-                          }
-                          title="Click to view contract details"
-                        >
-                          <FileText size={16} />
-                          {contract.fileName}
-                        </button>
-                        <div className="contract-meta">
-                          <span className="upload-date">
-                            <Clock size={14} />
-                            {new Date(
-                              contract.lastedited
-                                .seconds * 1000
-                            ).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="contract-card-middle">
-                      <div className="contract-actions">
-                        <button
-                          className="action-btn signature-btn"
-                          onClick={() =>
-                            handleSetupSignatures(
-                              contract
-                            )
-                          }
-                          title="Setup electronic signature"
-                        >
-                          <Edit3 size={14} />
-                          E-Sign
-                        </button>
-                        <label
-                          className="action-btn edit-btn"
-                          title="Replace contract"
-                        >
-                          <Upload size={14} />
-                          Replace
-                          <input
-                            type="file"
-                            accept=".pdf,.doc,.docx"
-                            hidden
-                            disabled={
-                              uploading ===
-                              client.eventId
-                            }
-                            onChange={(e) =>
-                              e.target.files[0] &&
-                              handleFileUpload(
-                                client.eventId,
-                                e.target.files[0],
-                                contract.id
-                              )
-                            }
-                          />
-                        </label>
-                        <button
-                          className="action-btn download-btn"
-                          onClick={() =>
-                            handleDownloadContract(
-                              contract.contractUrl,
-                              contract.fileName
-                            )
-                          }
-                          title="Download contract"
-                        >
-                          <Download size={14} />
-                          Download
-                        </button>
-                        <button
-                          className="action-btn delete-btn"
-                          onClick={() =>
-                            handleDeleteContract(
-                              client.eventId,
-                              contract.id
-                            )
-                          }
-                          title="Delete contract"
-                        >
-                          <Trash2 size={14} />
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="contract-card-right">
-                      {contract.finalPrices &&
-                        Object.keys(
-                          contract.finalPrices
-                        ).length > 0 && (
-                          <div className="pricing-card">
-                            <div className="pricing-info">
-                              <DollarSign size={16} />
-                              <span className="contract-value">
-                                {formatCurrency(
-                                  getTotalContractValue(
-                                    contract.finalPrices
-                                  )
-                                )}
-                              </span>
-                            </div>
-                          </div>
-                        )}
-                      <div className="status-container">
-                        <span
-                          className={`status-badge status-${contract.status}`}
-                        >
-                          {contract.status}
-                        </span>
-                        {contract.signatureWorkflow
-                          ?.isElectronic && (
-                          <span
-                            className={`signature-badge ${contract.signatureWorkflow.workflowStatus}`}
-                          >
-                            {contract.signatureWorkflow.workflowStatus.replace(
-                              "_",
-                              " "
-                            )}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {eventContracts.length === 0 && (
-            <div className="no-contracts-section">
-              <div className="upload-area">
-                <label className="upload-btn primary large">
-                  <Upload size={20} />
-                  {uploading === client.eventId
-                    ? "Uploading..."
-                    : "Upload First Contract"}
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx"
-                    hidden
-                    disabled={uploading === client.eventId}
-                    onChange={(e) =>
-                      e.target.files[0] &&
-                      handleFileUpload(
-                        client.eventId,
-                        e.target.files[0]
-                      )
-                    }
-                  />
-                </label>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+                    <Edit3 size={14} />
+                    E-Sign
+                  </button>
+                  <label className="vendor-btn-replace" title="Replace contract">
+                    <Upload size={14} />
+                    Replace
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      hidden
+                      disabled={uploading === client.eventId}
+                      onChange={(e) =>
+                        e.target.files[0] && handleFileUpload(client.eventId, e.target.files[0], contract.id)
+                      }
+                    />
+                  </label>
+                  <button
+                    className="vendor-btn-download"
+                    onClick={() => handleDownloadContract(contract.contractUrl, contract.fileName)}
+                    title="Download contract"
+                  >
+                    <Download size={14} />
+                    Download
+                  </button>
+                  <button
+                    className="vendor-btn-delete"
+                    onClick={() => handleDeleteContract(client.eventId, contract.id)}
+                    title="Delete contract"
+                  >
+                    <Trash2 size={14} />
+                    Delete
+                  </button>
+                </section>
+              </article>
+            ))}
+          </section>
+        ) : (
+          <p className="vendor-no-contracts">No contracts uploaded yet.</p>
+        )}
+      </article>
     );
   });
 
-  if (loading)
+  if (loading) {
     return (
-      <div className="loading-screen">
-        <div className="spinner"></div>
+      <section className="vendor-loading-screen">
+        <div className="vendor-spinner"></div>
         <p>Loading your clients...</p>
-      </div>
+      </section>
     );
+  }
 
-  if (error) return <p className="error">{error}</p>;
-  if (!clients.length)
+  if (error) return <p className="vendor-error">{error}</p>;
+
+  if (!clients.length) {
     return (
-      <div className="empty-state">
-        <FileText size={48} />
-        <h2>No clients found</h2>
-        <p>
-          Your client contracts will appear here once you have
-          bookings.
-        </p>
-      </div>
+      <section className="vendor-contracts-page">
+        <header className="vendor-contracts-header">
+          <section className="vendor-header-left">
+            <h1 className="vendor-contracts-title">Contract Management</h1>
+            <p className="vendor-contracts-subtitle">Manage contracts and final pricing for your events and clients</p>
+          </section>
+        </header>
+        <div className="vendor-empty-state">
+          <FileText size={48} />
+          <h2>No clients found</h2>
+          <p>Your client contracts will appear here once you have bookings.</p>
+        </div>
+      </section>
     );
+  }
 
   return (
     <section className="vendor-contracts-page">
-      <div className="page-header-container">
-        <div className="header-left">
-          <h1>Contract Management</h1>
-          <p>Manage contracts and final pricing for your events and clients</p>
-        </div>
-        <div className="header-right">
-          <div className="search-container">
-            <Search size={20} />
-            <input
-              type="text"
-              placeholder="Search by client name, event name, or email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="search-input"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm("")}
-                className="clear-search"
-              >
-                <X size={16} />
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+      <header className="vendor-contracts-header">
+        <section className="vendor-header-left">
+          <h1 className="vendor-contracts-title">Contract Management</h1>
+          <p className="vendor-contracts-subtitle">Manage contracts and final pricing for your events and clients</p>
+        </section>
+        <section className="vendor-search-container">
+          <Search size={20} />
+          <input
+            type="text"
+            placeholder="Search by client name, event name, or email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="vendor-search-input"
+          />
+          {searchTerm && (
+            <button onClick={() => setSearchTerm("")} className="vendor-clear-search">
+              <X size={16} />
+            </button>
+          )}
+        </section>
+      </header>
 
-      <div className="stats-dashboard">
-        <div className="stat-card">
-          <div className="stat-icon">
-            <FileText size={24} />
-          </div>
-          <div className="stat-content">
-            <span className="stat-number">
-              {allContracts.length}
-            </span>
-            <span className="stat-label">Total Contracts</span>
-          </div>
-        </div>
-        <div className="stat-card uploaded">
-          <div className="stat-icon">
-            <User size={24} />
-          </div>
-          <div className="stat-content">
-            <span className="stat-number">{uploadedCount}</span>
-            <span className="stat-label">
-              Clients with Contracts
-            </span>
-          </div>
-        </div>
-        <div className="stat-card pending">
-          <div className="stat-icon">
-            <Upload size={24} />
-          </div>
-          <div className="stat-content">
-            <span className="stat-number">{pendingCount}</span>
-            <span className="stat-label">
-              Pending Contracts
-            </span>
-          </div>
-        </div>
-        <div className="stat-card signature">
-          <div className="stat-icon">
-            <Edit3 size={24} />
-          </div>
-          <div className="stat-content">
-            <span className="stat-number">
-              {eSignatureCount}
-            </span>
-            <span className="stat-label">
-              E-Signature Ready
-            </span>
-          </div>
-        </div>
-      </div>
+      <section className="vendor-summary-grid">
+        <article className="vendor-summary-card">
+          <section className="vendor-summary-card-header">
+            <section className="vendor-summary-icon blue">
+              <FileText size={24} />
+            </section>
+          </section>
+          <p className="vendor-summary-label">Total Contracts</p>
+          <h2 className="vendor-summary-value">{allContracts.length}</h2>
+          <p className="vendor-summary-subtext">Active contracts</p>
+        </article>
 
-      <div className="contracts-content">
-        {uploadedClients.length > 0 && (
-          <div className="clients-section">
-            <div className="section-header-main">
-              <h2 className="section-title-main uploaded-title">
-                <FileText size={20} />
-                Clients with Contracts
-                <span className="count-badge-main">
-                  {uploadedClients.length}
-                </span>
-              </h2>
-            </div>
-            <div className="clients-grid">
+        <article className="vendor-summary-card">
+          <section className="vendor-summary-card-header">
+            <section className="vendor-summary-icon green">
+              <User size={24} />
+            </section>
+          </section>
+          <p className="vendor-summary-label">Clients with Contracts</p>
+          <h2 className="vendor-summary-value">{uploadedCount}</h2>
+          <p className="vendor-summary-subtext">Contracts uploaded</p>
+        </article>
+
+        <article className="vendor-summary-card">
+          <section className="vendor-summary-card-header">
+            <section className="vendor-summary-icon yellow">
+              <Clock size={24} />
+            </section>
+          </section>
+          <p className="vendor-summary-label">Pending Contracts</p>
+          <h2 className="vendor-summary-value">{pendingCount}</h2>
+          <p className="vendor-summary-subtext">Awaiting upload</p>
+        </article>
+
+        <article className="vendor-summary-card">
+          <section className="vendor-summary-card-header">
+            <section className="vendor-summary-icon purple">
+              <Edit3 size={24} />
+            </section>
+          </section>
+          <p className="vendor-summary-label">E-Signature Ready</p>
+          <h2 className="vendor-summary-value">{eSignatureCount}</h2>
+          <p className="vendor-summary-subtext">Electronic signatures</p>
+        </article>
+      </section>
+
+      {uploadedClients.length > 0 && (
+        <section className="vendor-clients-section">
+          <section className="vendor-section-header">
+            <h2 className="vendor-section-title">
+              <FileText size={20} />
+              Clients with Contracts ({uploadedClients.length})
+            </h2>
+          </section>
+          <section className="vendor-section-content">
+            <section className="vendor-clients-list">
               {uploadedClients.map((client) => (
-                <ClientCard
-                  key={client.id}
-                  client={client}
-                  isUploaded={true}
-                />
+                <ClientCard key={client.id} client={client} />
               ))}
-            </div>
-          </div>
-        )}
+            </section>
+          </section>
+        </section>
+      )}
 
-        {pendingClients.length > 0 && (
-          <div className="clients-section">
-            <div className="section-header-main">
-              <h2 className="section-title-main pending-title">
-                <Upload size={20} />
-                Clients Pending Contracts
-                <span className="count-badge-main">
-                  {pendingClients.length}
-                </span>
-              </h2>
-            </div>
-            <div className="clients-grid">
+      {pendingClients.length > 0 && (
+        <section className="vendor-clients-section" style={{ marginTop: '2rem' }}>
+          <section className="vendor-section-header">
+            <h2 className="vendor-section-title">
+              <Clock size={20} />
+              Clients Pending Contracts ({pendingClients.length})
+            </h2>
+          </section>
+          <section className="vendor-section-content">
+            <section className="vendor-clients-list">
               {pendingClients.map((client) => (
-                <ClientCard
-                  key={client.id}
-                  client={client}
-                  isUploaded={false}
-                />
+                <ClientCard key={client.id} client={client} />
               ))}
-            </div>
-          </div>
-        )}
+            </section>
+          </section>
+        </section>
+      )}
 
-        {debouncedSearchTerm && filteredClients.length === 0 && (
-          <div className="no-results">
-            <Search size={48} />
-            <h3>No contracts found</h3>
-            <p>No contracts match "{debouncedSearchTerm}"</p>
-          </div>
-        )}
-      </div>
+      {debouncedSearchTerm && filteredClients.length === 0 && (
+        <section className="vendor-no-results">
+          <Search size={48} />
+          <h3>No contracts found</h3>
+          <p>No contracts match "{debouncedSearchTerm}"</p>
+        </section>
+      )}
 
-      {/* Final Pricing Modal */}
-      <Popup
-        isOpen={showPricingModal}
-        onClose={() => setShowPricingModal(false)}
-      >
+      {/* Pricing Modal */}
+      <Popup isOpen={showPricingModal} onClose={() => setShowPricingModal(false)}>
         {currentClient && (
-          <div className="pricing-modal">
-            <div className="modal-header">
-              <div className="modal-title-section">
+          <div className="vendor-pricing-modal">
+            <div className="vendor-modal-header">
+              <div className="vendor-modal-title-section">
                 <h3>Set Final Pricing</h3>
-                <p>
-                  Enter the final contracted prices for{" "}
-                  {currentClient.name}
-                </p>
+                <p>Enter the final contracted prices for {currentClient.name}</p>
               </div>
-              <button
-                className="close-btn"
-                onClick={() => setShowPricingModal(false)}
-              >
+              <button className="vendor-close-btn" onClick={() => setShowPricingModal(false)}>
                 <X size={20} />
               </button>
             </div>
 
-            <div className="pricing-form">
-              <div className="client-summary">
-                <div className="client-info">
+            <div className="vendor-pricing-form">
+              <div className="vendor-client-summary">
+                <div>
                   <User size={16} />
                   <span>{currentClient.name}</span>
                 </div>
-                <div className="event-info">
+                <div>
                   <Calendar size={16} />
                   <span>{currentClient.event}</span>
                 </div>
               </div>
 
-              <div className="services-pricing">
+              <div className="vendor-services-pricing">
                 <h4>Services & Final Pricing</h4>
                 {loadingServices ? (
-                  <div className="loading-services">
-                    <div className="spinner-small"></div>
+                  <div className="vendor-loading-services">
+                    <div className="vendor-spinner-small"></div>
                     <span>Loading services...</span>
                   </div>
                 ) : (
-                  <div className="pricing-fields">
+                  <div className="vendor-pricing-fields">
                     {clientServices.map((service) => (
-                      <div
-                        key={service.id}
-                        className="price-field"
-                      >
-                        <div className="price-label">
-                          <span className="service-name">
-                            {service.name}
-                          </span>
+                      <div key={service.id} className="vendor-price-field">
+                        <div className="vendor-price-label">
+                          <span className="vendor-service-name">{service.name}</span>
                           {service.description && (
-                            <span className="service-description">
-                              {service.description}
-                            </span>
+                            <span className="vendor-service-description">{service.description}</span>
                           )}
                         </div>
-                        <div className="price-input-container">
-                          <span className="currency-icon">
-                            $
-                          </span>
+                        <div className="vendor-price-input-container">
+                          <span className="vendor-currency-icon">$</span>
                           <input
                             type="number"
                             step="0.01"
                             min="0"
                             placeholder="0.00"
-                            value={
-                              finalPrices[service.id] || ""
-                            }
+                            value={finalPrices[service.id] || ""}
                             onChange={(e) =>
                               setFinalPrices((prev) => ({
                                 ...prev,
-                                [service.id]:
-                                  e.target.value,
+                                [service.id]: e.target.value,
                               }))
                             }
-                            className="price-input"
+                            className="vendor-price-input"
                           />
                         </div>
                       </div>
@@ -1329,18 +1018,12 @@ const VendorContract = ({ setActivePage }) => {
                   </div>
                 )}
 
-                <div className="pricing-summary">
-                  <div className="total-calculation">
-                    <span className="total-label">
-                      Total Contract Value:
-                    </span>
-                    <span className="total-amount">
+                <div className="vendor-pricing-summary">
+                  <div className="vendor-total-calculation">
+                    <span className="vendor-total-label">Total Contract Value:</span>
+                    <span className="vendor-total-amount">
                       {formatCurrency(
-                        Object.values(finalPrices).reduce(
-                          (sum, price) =>
-                            sum + (parseFloat(price) || 0),
-                          0
-                        )
+                        Object.values(finalPrices).reduce((sum, price) => sum + (parseFloat(price) || 0), 0)
                       )}
                     </span>
                   </div>
@@ -1348,18 +1031,11 @@ const VendorContract = ({ setActivePage }) => {
               </div>
             </div>
 
-            <div className="modal-footer">
-              <button
-                className="btn-secondary"
-                onClick={() => setShowPricingModal(false)}
-              >
+            <div className="vendor-modal-footer">
+              <button className="vendor-btn-secondary" onClick={() => setShowPricingModal(false)}>
                 Cancel
               </button>
-              <button
-                className="btn-primary"
-                onClick={handlePricingSubmit}
-                disabled={loadingServices}
-              >
+              <button className="vendor-btn-primary" onClick={handlePricingSubmit} disabled={loadingServices}>
                 <Save size={16} />
                 Save Final Pricing & Upload Contract
               </button>
@@ -1369,221 +1045,127 @@ const VendorContract = ({ setActivePage }) => {
       </Popup>
 
       {/* Contract Details Modal */}
-      <Popup
-        isOpen={showContractModal}
-        onClose={() => setShowContractModal(false)}
-      >
+      <Popup isOpen={showContractModal} onClose={() => setShowContractModal(false)}>
         {selectedContract && (
-          <div className="contract-details-modal">
-            <div className="modal-header">
-              <div className="modal-title-section">
+          <div className="vendor-contract-details-modal">
+            <div className="vendor-modal-header">
+              <div className="vendor-modal-title-section">
                 <h3>Contract Details</h3>
-                <div className="contract-quick-info">
-                  <span className="file-name">
-                    {selectedContract.fileName}
-                  </span>
-                  <span
-                    className={`status-badge status-${selectedContract.status}`}
-                  >
+                <div className="vendor-modal-quick-info">
+                  <span className="vendor-file-name-display">{selectedContract.fileName}</span>
+                  <span className={`vendor-status-badge status-${selectedContract.status}`}>
                     {selectedContract.status}
                   </span>
-                  {selectedContract.signatureWorkflow
-                    ?.isElectronic && (
-                    <span
-                      className={`signature-badge ${selectedContract.signatureWorkflow.workflowStatus}`}
-                    >
-                      {
-                        selectedContract.signatureWorkflow
-                          .workflowStatus
-                      }
+                  {selectedContract.signatureWorkflow?.isElectronic && (
+                    <span className={`vendor-status-badge status-${selectedContract.signatureWorkflow.workflowStatus}`}>
+                      {selectedContract.signatureWorkflow.workflowStatus}
                     </span>
                   )}
                 </div>
               </div>
-              <div className="modal-header-actions">
+              <div className="vendor-modal-header-actions">
                 <button
-                  className="action-btn download-btn"
-                  onClick={() =>
-                    handleDownloadContract(
-                      selectedContract.contractUrl,
-                      selectedContract.fileName
-                    )
-                  }
+                  className="vendor-btn-download"
+                  onClick={() => handleDownloadContract(selectedContract.contractUrl, selectedContract.fileName)}
                 >
                   <Download size={16} />
                   Download
                 </button>
-                <button
-                  className="close-btn"
-                  onClick={() =>
-                    setShowContractModal(false)
-                  }
-                >
+                <button className="vendor-close-btn" onClick={() => setShowContractModal(false)}>
                   <X size={20} />
                 </button>
               </div>
             </div>
 
-            <div className="modal-body">
-              <div className="contract-viewer">
-                {selectedContract.fileName
-                  .toLowerCase()
-                  .endsWith(".pdf") ? (
-                  <iframe
-                    src={iframeSrc}
-                    title="Contract Document"
-                  />
+            <div className="vendor-modal-body">
+              <div className="vendor-contract-viewer">
+                {selectedContract.fileName.toLowerCase().endsWith(".pdf") ? (
+                  <iframe src={iframeSrc} title="Contract Document" />
                 ) : (
-                  <div className="unsupported-file">
+                  <div className="vendor-unsupported-file">
                     <FileText size={48} />
-                    <p>
-                      Preview not available for this file type.
-                    </p>
-                    <p>
-                      Please download the file to view it.
-                    </p>
+                    <p>Preview not available for this file type.</p>
+                    <p>Please download the file to view it.</p>
                   </div>
                 )}
               </div>
 
-              <div className="contract-info-panel">
-                <div className="info-section">
+              <div className="vendor-contract-info-panel">
+                <div className="vendor-info-section">
                   <h4>Contract Information</h4>
-                  <div className="info-grid">
-                    <div className="info-item">
+                  <div className="vendor-info-grid">
+                    <div className="vendor-info-item">
                       <label>Client Name</label>
-                      <span>
-                        {selectedContract.clientName}
-                      </span>
+                      <span>{selectedContract.clientName}</span>
                     </div>
-                    <div className="info-item">
+                    <div className="vendor-info-item">
                       <label>Client Email</label>
-                      <span>
-                        {selectedContract.clientEmail}
-                      </span>
+                      <span>{selectedContract.clientEmail}</span>
                     </div>
-                    <div className="info-item">
+                    <div className="vendor-info-item">
                       <label>Event Name</label>
-                      <span>
-                        {selectedContract.eventName}
-                      </span>
+                      <span>{selectedContract.eventName}</span>
                     </div>
-                    <div className="info-item">
+                    <div className="vendor-info-item">
                       <label>File Name</label>
-                      <span>
-                        {selectedContract.fileName}
-                      </span>
+                      <span>{selectedContract.fileName}</span>
                     </div>
-                    <div className="info-item">
+                    <div className="vendor-info-item">
                       <label>Last Updated</label>
-                      <span>
-                        {new Date(
-                          selectedContract.lastedited
-                            .seconds * 1000
-                        ).toLocaleDateString()}
-                      </span>
+                      <span>{new Date(selectedContract.lastedited.seconds * 1000).toLocaleDateString()}</span>
                     </div>
                   </div>
                 </div>
 
-                {selectedContract.finalPrices &&
-                  Object.keys(
-                    selectedContract.finalPrices
-                  ).length > 0 && (
-                    <div className="info-section">
-                      <h4>Pricing Breakdown</h4>
-                      <div className="pricing-breakdown">
-                        {Object.keys(
-                          selectedContract.finalPrices
-                        ).map((serviceId) => {
-                          const service =
-                            clientServices.find(
-                              (s) => s.id === serviceId
-                            ) || {
-                              name: `Service ${serviceId}`,
-                            };
-                          return (
-                            <div
-                              key={serviceId}
-                              className="price-item"
-                            >
-                              <span className="service-name">
-                                {service.name}
-                              </span>
-                              <span className="price-value">
-                                {formatCurrency(
-                                  selectedContract
-                                    .finalPrices[
-                                    serviceId
-                                  ]
-                                )}
-                              </span>
-                            </div>
-                          );
-                        })}
-                        <div className="price-total">
-                          <span className="total-label">
-                            Total:
-                          </span>
-                          <span className="total-value">
-                            {formatCurrency(
-                              getTotalContractValue(
-                                selectedContract.finalPrices
-                              )
-                            )}
-                          </span>
-                        </div>
+                {selectedContract.finalPrices && Object.keys(selectedContract.finalPrices).length > 0 && (
+                  <div className="vendor-info-section">
+                    <h4>Pricing Breakdown</h4>
+                    <div className="vendor-pricing-breakdown">
+                      {Object.keys(selectedContract.finalPrices).map((serviceId) => {
+                        const service = clientServices.find((s) => s.id === serviceId) || {
+                          name: `Service ${serviceId}`,
+                        };
+                        return (
+                          <div key={serviceId} className="vendor-price-item">
+                            <span className="vendor-service-name">{service.name}</span>
+                            <span className="vendor-price-value">
+                              {formatCurrency(selectedContract.finalPrices[serviceId])}
+                            </span>
+                          </div>
+                        );
+                      })}
+                      <div className="vendor-price-total">
+                        <span className="vendor-total-label">Total:</span>
+                        <span className="vendor-total-value">
+                          {formatCurrency(getTotalContractValue(selectedContract.finalPrices))}
+                        </span>
                       </div>
                     </div>
-                  )}
+                  </div>
+                )}
 
-                {selectedContract.signatureWorkflow
-                  ?.isElectronic && (
-                  <div className="info-section">
+                {selectedContract.signatureWorkflow?.isElectronic && (
+                  <div className="vendor-info-section">
                     <h4>Signature Workflow</h4>
-                    <div className="info-grid">
-                      <div className="info-item">
+                    <div className="vendor-info-grid">
+                      <div className="vendor-info-item">
                         <label>Workflow Status</label>
-                        <span>
-                          {
-                            selectedContract
-                              .signatureWorkflow
-                              .workflowStatus
-                          }
-                        </span>
+                        <span>{selectedContract.signatureWorkflow.workflowStatus}</span>
                       </div>
-                      <div className="info-item">
+                      <div className="vendor-info-item">
                         <label>Created</label>
-                        <span>
-                          {new Date(
-                            selectedContract
-                              .signatureWorkflow.createdAt
-                          ).toLocaleDateString()}
-                        </span>
+                        <span>{new Date(selectedContract.signatureWorkflow.createdAt).toLocaleDateString()}</span>
                       </div>
-                      {selectedContract.signatureWorkflow
-                        .sentAt && (
-                        <div className="info-item">
+                      {selectedContract.signatureWorkflow.sentAt && (
+                        <div className="vendor-info-item">
                           <label>Sent for Signature</label>
-                          <span>
-                            {new Date(
-                              selectedContract
-                                .signatureWorkflow.sentAt
-                            ).toLocaleDateString()}
-                          </span>
+                          <span>{new Date(selectedContract.signatureWorkflow.sentAt).toLocaleDateString()}</span>
                         </div>
                       )}
-                      {selectedContract.signatureWorkflow
-                        .completedAt && (
-                        <div className="info-item">
+                      {selectedContract.signatureWorkflow.completedAt && (
+                        <div className="vendor-info-item">
                           <label>Completed</label>
-                          <span>
-                            {new Date(
-                              selectedContract
-                                .signatureWorkflow
-                                .completedAt
-                            ).toLocaleDateString()}
-                          </span>
+                          <span>{new Date(selectedContract.signatureWorkflow.completedAt).toLocaleDateString()}</span>
                         </div>
                       )}
                     </div>
