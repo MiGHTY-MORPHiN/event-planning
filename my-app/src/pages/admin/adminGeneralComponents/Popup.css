@@ -1,0 +1,46 @@
+.popup-overlay{
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    justify-content: center;   /* horizontal center */
+    align-items: center;       /* vertical center */
+    padding: 0.5rem;
+    z-index: 9999;
+}
+.popup-content{
+    max-width: none;
+    width: 90vw;
+    max-height: 80vh;
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    box-sizing: border-box;
+    overflow-y: scroll;
+    overflow-y: overlay;
+    position: relative;
+}
+.popup-close-button{
+    position: sticky;
+    top: 0;                    /* sticks to the top of .popup-content */
+    float: right;              /* optional for right-edge */
+    margin-left: auto;
+    padding: 0.5rem 1rem;
+    z-index: 1;
+}
+
+/* Make scrollbar less intrusive in Chrome: */
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f100;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #80808080;
+}
