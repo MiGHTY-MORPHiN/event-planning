@@ -19,6 +19,27 @@ import "./vendorBooking.css";
 import ChatComponent from "../planner/ChatComponent.jsx";
 import BASE_URL from "../../apiConfig";
 
+// Persistence helpers
+const STORAGE_KEY = "vendor_booking_statuses";
+
+const loadPersistedStatuses = () => {
+	try {
+		const saved = localStorage.getItem(STORAGE_KEY);
+		return saved ? JSON.parse(saved) : {};
+	} catch (err) {
+		console.warn("Error loading persisted statuses:", err);
+		return {};
+	}
+};
+
+const savePersistedStatuses = (statuses) => {
+	try {
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(statuses));
+	} catch (err) {
+		console.warn("Error saving persisted statuses:", err);
+	}
+};
+
 // ---------- Format Date ----------
 function formatDate(date) {
 	if (!date) return "";
