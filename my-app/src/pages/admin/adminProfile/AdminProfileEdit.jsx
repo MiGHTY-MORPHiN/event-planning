@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../../../firebase";
 import "./AdminProfileEdit.css";
-import BASE_URL from "../../../apiConfig";
 
 export default function AdminProfileEdit() {
 	const navigate = useNavigate();
@@ -22,9 +21,12 @@ export default function AdminProfileEdit() {
 			if (!auth.currentUser) return;
 			try {
 				const token = await auth.currentUser.getIdToken();
-				const res = await fetch(`${BASE_URL}/admin/me`, {
-					headers: { Authorization: `Bearer ${token}` },
-				});
+				const res = await fetch(
+					"https://us-central1-planit-sdp.cloudfunctions.net/api/admin/me",
+					{
+						headers: { Authorization: `Bearer ${token}` },
+					}
+				);
 				if (!res.ok) throw new Error("Failed to fetch profile");
 				const data = await res.json();
 				setName(data.fullName || "");
@@ -62,18 +64,21 @@ export default function AdminProfileEdit() {
 				});
 			}
 
-			const res = await fetch(`${BASE_URL}/admin/me`, {
-				method: "PUT",
-				headers: {
-					Authorization: `Bearer ${token}`,
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					fullName,
-					phone,
-					profilePic: profilePicBase64,
-				}),
-			});
+			const res = await fetch(
+				"https://us-central1-planit-sdp.cloudfunctions.net/api/admin/me",
+				{
+					method: "PUT",
+					headers: {
+						Authorization: `Bearer ${token}`,
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						fullName,
+						phone,
+						profilePic: profilePicBase64,
+					}),
+				}
+			);
 
 			const data = await res.json();
 			if (!res.ok) throw new Error(data.message || "Update failed");

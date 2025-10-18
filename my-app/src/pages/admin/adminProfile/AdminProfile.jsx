@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { auth } from "../../../firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import { Edit, Mail, Phone, X, Save, Upload, User } from "lucide-react";
+import { Edit, Mail, Phone, Save, Upload } from "lucide-react";
 import "./AdminProfile.css";
 import BASE_URL from "../../../apiConfig";
 import LoadingSpinner from "../../general/loadingspinner/LoadingSpinner";
