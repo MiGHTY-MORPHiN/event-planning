@@ -100,23 +100,27 @@
 }
 
 .vendor-summary-card {
-  background: lch(100% 0.01 296.81);
+  background: white !important; /* Fixed background to ensure white */
   border-radius: 0.75rem;
   padding: 1.5rem;
-  /*box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);*/
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   border: 1px solid #e5e7eb;
-  /*transition: box-shadow 0.2s ease; */
+  transition: box-shadow 0.2s ease;
 }
-/*
+
 .vendor-summary-card:hover {
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-}   */
+}
 
 .vendor-summary-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
+}
+
+.vendor-summary-card-content { /* Added new class for content area */
+  background: transparent;
 }
 
 .vendor-summary-icon {
@@ -203,12 +207,12 @@
   border: 1px solid #e5e7eb;
   border-radius: 0.75rem;
   padding: 1.25rem;
-  background: white;
+  background: #fafafa;
   transition: all 0.2s ease;
 }
 
 .vendor-client-card:hover {
-  background: white;
+  background: #f8fafc;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
@@ -366,8 +370,16 @@
   font-weight: 600;
 }
 
-.vendor-status-badge.status-pending,
-.vendor-status-badge.status-partial,
+.vendor-status-badge.status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.vendor-status-badge.status-partial {
+  background: #fef3c7;
+  color: #92400e;
+}
+
 .vendor-status-badge.status-partially_signed {
   background: #fef3c7;
   color: #92400e;
@@ -393,7 +405,11 @@
   color: #991b1b;
 }
 
-.vendor-status-badge.status-review,
+.vendor-status-badge.status-review {
+  background: #fef3c7;
+  color: #92400e;
+}
+
 .vendor-status-badge.status-sent {
   background: #fef3c7;
   color: #92400e;
@@ -412,7 +428,7 @@
   display: flex;
   align-items: center;
   gap: 0.375rem;
-  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  background: linear-gradient(135deg, #1d4ed8, #af1e97);
   color: white;
   padding: 0.625rem 1rem;
   border-radius: 0.5rem;
@@ -425,7 +441,7 @@
 }
 
 .vendor-btn-sign:hover:not(:disabled) {
-  background: linear-gradient(135deg, #1e40af, #1d4ed8);
+  background: linear-gradient(135deg, #af1e97, #7031e6);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);
 }
@@ -440,7 +456,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  background: linear-gradient(135deg, #f15710, #4f19e2);
+  background: linear-gradient(135deg, #662dec, #0ec9eb);
   color: white;
   padding: 0.625rem 1rem;
   border-radius: 0.5rem;
@@ -453,7 +469,7 @@
 }
 
 .vendor-btn-replace:hover:not(:disabled) {
-  background: linear-gradient(135deg, #4f19e2, #4f19e2);
+  background: linear-gradient(135deg, #662dec, #0ec9eb);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
 }
@@ -484,26 +500,34 @@
   box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
 }
 
+/* Fixed Delete Button - White with Red Border */
 .vendor-btn-delete {
   display: flex;
   align-items: center;
   gap: 0.375rem;
-  background: white;
-  color: #dc2626;
+  background: white !important; /* White background */
+  color: #dc2626 !important; /* Red text */
   padding: 0.625rem 1rem;
   border-radius: 0.5rem;
   font-size: 0.875rem;
   font-weight: 600;
-  border: 2px solid #dc2626;
+  border: 2px solid #dc2626 !important; /* Red border */
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   white-space: nowrap;
 }
 
 .vendor-btn-delete:hover {
-  background: #fef2f2;
-  border-color: #991b1b;
+  background: #fef2f2 !important; /* Light red background on hover */
+  color: #991b1b !important; /* Darker red text on hover */
+  border-color: #991b1b !important; /* Darker red border on hover */
+  transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+}
+
+.vendor-btn-delete:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.2);
 }
 
 /* No Contracts State */
@@ -1045,7 +1069,10 @@
     justify-content: stretch;
   }
 
-  .vendor-contract-actions button,
+  .vendor-contract-actions button {
+    flex: 1;
+  }
+
   .vendor-contract-actions label {
     flex: 1;
   }
@@ -1094,7 +1121,11 @@
     flex-direction: column;
   }
 
-  .vendor-contract-actions button,
+  .vendor-contract-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+
   .vendor-contract-actions label {
     width: 100%;
     justify-content: center;
