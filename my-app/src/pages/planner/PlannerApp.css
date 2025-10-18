@@ -1,8 +1,14 @@
 /* src/vendor/VendorApp.css */
 
-.vendor-app {
+.plaaner-app {
   min-height: 100vh;
   background: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%);
+}
+
+@media(prefers-color-scheme: dark){
+  .planner-app{
+    background: #111827;
+  }
 }
 
 /* Navigation Bar */
@@ -20,6 +26,21 @@
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 1.5rem;
+
+}
+
+@media (prefers-color-scheme: dark){
+  .navbar-container{
+      background: #111827;
+        width: 100%;
+  }
+  .vendor-navbar{
+    background: #111827;
+  }
+
+  .navbar-left{
+    background: #111827;
+  }
 }
 
 .navbar-content {
@@ -108,10 +129,16 @@
 }
 
 /* Main Content */
-.vendor-main {
+.planner-main {
   max-width: 1280px;
   margin: 0 auto;
   padding: 1.5rem;
+}
+
+@media(prefers-color-scheme: dark){
+  .planner-main{
+    background: #111827;
+  }
 }
 
 /* Placeholder Pages */
@@ -164,6 +191,7 @@
 .back-to-dashboard-btn:hover {
   opacity: 0.9;
 }
+
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
