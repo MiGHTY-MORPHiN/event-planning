@@ -1,0 +1,612 @@
+/* VendorDetails.css - Fixed and Enhanced */
+
+/* Overlay */
+.vendor-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  z-index: 50;
+  backdrop-filter: blur(4px);
+}
+
+/* Container */
+.vendor-modal-container {
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.vendor-modal-header {
+  background: #ffffff;
+  color: #111827;
+  padding: 24px;
+  position: relative;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid #e5e7eb;
+  z-index: 100;
+}
+
+.vendor-modal-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: transparent;
+  border: none;
+  padding: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #111827;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vendor-modal-close-btn:hover {
+  background: #f3f4f6;
+}
+
+.vendor-modal-header-info {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.vendor-modal-image {
+  width: 100px;
+  height: 100px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 3px solid #f3f4f6;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background: #e5e7eb;
+  flex-shrink: 0;
+}
+
+.vendor-modal-header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.vendor-modal-business-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: #111827;
+  word-wrap: break-word;
+}
+
+.vendor-modal-category {
+  color: #1d4ed8;
+  margin: 0 0 12px 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.vendor-modal-rating-location {
+  display: flex;
+  gap: 16px;
+  font-size: 0.875rem;
+  flex-wrap: wrap;
+}
+
+.vendor-modal-rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #059669;
+  font-weight: 600;
+}
+
+.vendor-modal-location {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #6b7280;
+}
+
+/* Tabs */
+.vendor-modal-tabs {
+  display: flex;
+  border-bottom: 2px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.vendor-modal-tab {
+  padding: 14px 24px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  background: none;
+  border: none;
+  transition: all 0.2s ease;
+  color: #6b7280;
+  position: relative;
+  margin-bottom: -2px;
+}
+
+.vendor-modal-tab:hover {
+  background: #f9fafb;
+  color: #374151;
+}
+
+.vendor-modal-tab.active-tab {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+  background: transparent;
+}
+
+/* Content */
+.vendor-modal-content {
+  padding: 24px;
+  max-height: 400px;
+  overflow-y: auto;
+  background: #ffffff;
+}
+
+.vendor-modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.vendor-modal-content::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+.vendor-modal-content::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+.vendor-modal-content::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.vendor-modal-contact-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.vendor-modal-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f9fafb;
+  padding: 14px 16px;
+  border-radius: 12px;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+}
+
+.vendor-modal-contact-item svg {
+  color: #2563eb;
+  flex-shrink: 0;
+}
+
+.vendor-modal-services {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.vendor-modal-service-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 20px;
+  transition: all 0.2s ease;
+  background: #ffffff;
+}
+
+.vendor-modal-service-card:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  border-color: #d1d5db;
+}
+
+.vendor-modal-service-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  gap: 16px;
+}
+
+.vendor-modal-service-header h3 {
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.vendor-modal-service-price {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.price-amount {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #059669;
+  display: block;
+}
+
+.service-type {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.vendor-modal-service-notes {
+  margin: 12px 0;
+  color: #4b5563;
+  line-height: 1.6;
+  font-size: 0.9rem;
+}
+
+.vendor-modal-service-actions {
+  margin-top: 16px;
+}
+
+/* Overview Section */
+.vendor-modal-overview h3 {
+  margin: 0 0 12px 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.vendor-description {
+  line-height: 1.7;
+  color: #4b5563;
+  margin-bottom: 24px;
+  font-size: 0.95rem;
+}
+
+.vendor-service-summary {
+  background: #f9fafb;
+  padding: 16px 20px;
+  border-radius: 12px;
+  margin-top: 16px;
+  border: 1px solid #e5e7eb;
+}
+
+.vendor-service-summary p {
+  margin: 0 0 12px 0;
+  font-weight: 600;
+  color: #374151;
+}
+
+.service-highlights {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.service-highlights li {
+  padding: 6px 0;
+  color: #4b5563;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.service-highlights li:last-child {
+  border-bottom: none;
+}
+
+/* Footer */
+.vendor-modal-footer {
+  background: #f9fafb;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  border-top: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.vendor-modal-footer-btn {
+  padding: 10px 20px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  background: transparent;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.vendor-modal-footer-btn:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.vendor-modal-footer-btn-primary {
+  padding: 10px 24px;
+  border-radius: 10px;
+  border: none;
+  background: #2563eb;
+  color: #ffffff;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+}
+
+.vendor-modal-footer-btn-primary:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+}
+
+/* --- DARK MODE SUPPORT --- */
+@media (prefers-color-scheme: dark) {
+  .vendor-modal-overlay {
+    background: rgba(0, 0, 0, 0.8);
+  }
+
+  .vendor-modal-container {
+    background: #1f2937;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  }
+
+  .vendor-modal-header {
+    background: #1f2937;
+    border-bottom-color: #374151;
+  }
+
+  .vendor-modal-close-btn {
+    color: #f9fafb;
+  }
+
+  .vendor-modal-close-btn:hover {
+    background: #374151;
+  }
+
+  .vendor-modal-image {
+    border-color: #374151;
+    background: #374151;
+  }
+
+  .vendor-modal-business-name {
+    color: #f9fafb;
+  }
+
+  .vendor-modal-category {
+    color: #93c5fd;
+  }
+
+  .vendor-modal-rating {
+    color: #34d399;
+  }
+
+  .vendor-modal-location {
+    color: #9ca3af;
+  }
+
+  .vendor-modal-tabs {
+    background: #1f2937;
+    border-bottom-color: #374151;
+  }
+
+  .vendor-modal-tab {
+    color: #9ca3af;
+  }
+
+  .vendor-modal-tab:hover {
+    background: #374151;
+    color: #d1d5db;
+  }
+
+  .vendor-modal-tab.active-tab {
+    color: #60a5fa;
+    border-bottom-color: #60a5fa;
+  }
+
+  .vendor-modal-content {
+    background: #1f2937;
+  }
+
+  .vendor-modal-content::-webkit-scrollbar-track {
+    background: #374151;
+  }
+
+  .vendor-modal-content::-webkit-scrollbar-thumb {
+    background: #4b5563;
+  }
+
+  .vendor-modal-content::-webkit-scrollbar-thumb:hover {
+    background: #6b7280;
+  }
+
+  .vendor-modal-contact-item {
+    background: #111827;
+    border-color: #374151;
+    color: #d1d5db;
+  }
+
+  .vendor-modal-contact-item svg {
+    color: #60a5fa;
+  }
+
+  .vendor-modal-service-card {
+    background: #111827;
+    border-color: #374151;
+  }
+
+  .vendor-modal-service-card:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    border-color: #4b5563;
+  }
+
+  .vendor-modal-service-header h3 {
+    color: #f9fafb;
+  }
+
+  .price-amount {
+    color: #34d399;
+  }
+
+  .service-type {
+    color: #9ca3af;
+  }
+
+  .vendor-modal-service-notes {
+    color: #9ca3af;
+  }
+
+  .vendor-modal-overview h3 {
+    color: #f9fafb;
+  }
+
+  .vendor-description {
+    color: #9ca3af;
+  }
+
+  .vendor-service-summary {
+    background: #111827;
+    border-color: #374151;
+  }
+
+  .vendor-service-summary p {
+    color: #d1d5db;
+  }
+
+  .service-highlights li {
+    color: #9ca3af;
+    border-bottom-color: #374151;
+  }
+
+  .vendor-modal-footer {
+    background: #111827;
+    border-top-color: #374151;
+  }
+
+  .vendor-modal-footer-btn {
+    color: #9ca3af;
+  }
+
+  .vendor-modal-footer-btn:hover {
+    background: #374151;
+    color: #d1d5db;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .vendor-modal-overlay {
+    padding: 8px;
+  }
+  
+  .vendor-modal-container {
+    max-height: 95vh;
+    border-radius: 20px;
+  }
+  
+  .vendor-modal-header {
+    padding: 16px;
+  }
+  
+  .vendor-modal-header-info {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .vendor-modal-image {
+    align-self: center;
+  }
+
+  .vendor-modal-header-text {
+    width: 100%;
+  }
+
+  .vendor-modal-rating-location {
+    justify-content: center;
+  }
+  
+  .vendor-modal-content {
+    padding: 16px;
+    max-height: 350px;
+  }
+  
+  .vendor-modal-contact-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .vendor-modal-tabs {
+    overflow-x: auto;
+  }
+  
+  .vendor-modal-tab {
+    flex: 1;
+    min-width: 100px;
+    text-align: center;
+    padding: 12px 16px;
+  }
+  
+  .vendor-modal-footer {
+    flex-direction: column;
+    padding: 12px 16px;
+  }
+
+  .vendor-modal-footer-btn,
+  .vendor-modal-footer-btn-primary {
+    width: 100%;
+  }
+  
+  .vendor-modal-service-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .vendor-modal-service-price {
+    text-align: left;
+  }
+}
+
+@media (max-width: 480px) {
+  .vendor-modal-header {
+    padding: 12px;
+  }
+
+  .vendor-modal-image {
+    width: 80px;
+    height: 80px;
+  }
+
+  .vendor-modal-business-name {
+    font-size: 1.25rem;
+  }
+
+  .vendor-modal-content {
+    padding: 12px;
+  }
+
+  .vendor-modal-service-card {
+    padding: 16px;
+  }
+
+  .vendor-modal-footer {
+    padding: 12px;
+  }
+}
