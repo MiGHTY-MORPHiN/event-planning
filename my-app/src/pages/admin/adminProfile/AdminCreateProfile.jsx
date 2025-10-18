@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../../../firebase"; // Ensure this path is correct
 import "./AdminCreateProfile.css";
-import BASE_URL from "../../../apiConfig";
 
 export default function AdminCreateProfile() {
 	const navigate = useNavigate();
@@ -20,6 +19,7 @@ export default function AdminCreateProfile() {
 	useEffect(() => {
 		if (auth.currentUser) {
 			setEmail(auth.currentUser.email);
+			
 		}
 	}, []);
 
@@ -30,7 +30,8 @@ export default function AdminCreateProfile() {
 
 		if (!auth.currentUser) {
 			setError("You must be logged in to create a profile");
-
+			
+			
 			return;
 		}
 
@@ -55,14 +56,17 @@ export default function AdminCreateProfile() {
 				profilePic: profilePicBase64,
 			};
 
-			const res = await fetch(`${BASE_URL}/admin/me`, {
-				method: "POST",
-				headers: {
-					Authorization: `Bearer ${token}`,
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(body),
-			});
+			const res = await fetch(
+				"https://us-central1-planit-sdp.cloudfunctions.net/api/admin/me",
+				{
+					method: "POST",
+					headers: {
+						Authorization: `Bearer ${token}`,
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify(body),
+				}
+			);
 
 			const data = await res.json();
 			if (!res.ok)

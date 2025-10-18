@@ -5,7 +5,7 @@ function Popup({ isOpen, onClose, children }) {
 	if (!isOpen) return null;
 
 	return (
-		<div className="popup-overlay">
+		<div className="popup-overlay" role="presentation" onClick={onClose}>
 			<section
 				className="popup-content"
 				onClick={(e) => e.stopPropagation()}

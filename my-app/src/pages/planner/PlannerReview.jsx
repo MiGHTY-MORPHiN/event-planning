@@ -1,10 +1,10 @@
-// PlannerReview.jsx - Updated with Improved Flow and Specific Class Names
 import React, { useState, useEffect } from "react";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { Star, Calendar, MapPin } from "lucide-react";
+import { getAuth } from "firebase/auth";
 import "./PlannerReview.css";
 import PlannerReviewVendor from "./PlannerReviewVendor.jsx";
-import BASE_URL from "../../apiConfig";
+
+const API_BASE = "https://us-central1-planit-sdp.cloudfunctions.net/api";
+const API_TEST = "http://127.0.0.1:5001/planit-sdp/us-central1/api";
 
 export default function PlannerReviewsPage() {
   const [loading, setLoading] = useState(true);
@@ -13,35 +13,21 @@ export default function PlannerReviewsPage() {
   const [selectedVendor, setSelectedVendor] = useState(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [filter, setFilter] = useState("all"); // all, past, upcoming
-  const [reviews, setReviews] = useState([]);
-  const [reviewsLoading, setReviewsLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("events"); // events, reviews
 
   useEffect(() => {
-    const auth = getAuth();
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        fetchEventsAndVendors();
-        fetchPlannerReviews();
-      }
-    });
-    
-    return unsubscribe;
+    fetchEventsAndVendors();
   }, []);
 
   const fetchEventsAndVendors = async () => {
     setLoading(true);
     try {
       const auth = getAuth();
-      const token = await auth.currentUser.getIdToken(true);
+      const token = await auth.currentUser.getIdToken();
 
       // Fetch all planner's events
-      const eventsResponse = await fetch(
-        `${BASE_URL}/planner/me/events`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const eventsResponse = await fetch(`${API_BASE}/planner/me/events`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (!eventsResponse.ok) {
         throw new Error("Failed to fetch events");
@@ -70,7 +56,7 @@ export default function PlannerReviewsPage() {
         try {
           // Get services for this event
           const servicesResponse = await fetch(
-            `${BASE_URL}/planner/${event.id}/services`,
+            `${API_BASE}/planner/${event.id}/services`,
             {
               headers: { Authorization: `Bearer ${token}` },
             }
@@ -90,18 +76,13 @@ export default function PlannerReviewsPage() {
                   services: [],
                 };
               }
-              vendorServicesMap[service.vendorId].services.push(
-                service
-              );
+              vendorServicesMap[service.vendorId].services.push(service);
             });
 
             vendorsMap[event.id] = Object.values(vendorServicesMap);
           }
         } catch (err) {
-          console.error(
-            `Error fetching vendors for event ${event.id}:`,
-            err
-          );
+          console.error(`Error fetching vendors for event ${event.id}:`, err);
           vendorsMap[event.id] = [];
         }
       }
@@ -112,30 +93,6 @@ export default function PlannerReviewsPage() {
       alert("Failed to load events and vendors");
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Function to fetch planner's reviews
-  const fetchPlannerReviews = async () => {
-    setReviewsLoading(true);
-    try {
-      const auth = getAuth();
-      const token = await auth.currentUser.getIdToken(true);
-
-      const response = await fetch(`${BASE_URL}/planner/my-reviews`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setReviews(data.reviews || []);
-      } else {
-        console.error("Failed to fetch reviews");
-      }
-    } catch (err) {
-      console.error("Error fetching reviews:", err);
-    } finally {
-      setReviewsLoading(false);
     }
   };
 
@@ -153,7 +110,6 @@ export default function PlannerReviewsPage() {
     setShowReviewModal(false);
     setSelectedVendor(null);
     alert("Thank you for your review!");
-    fetchPlannerReviews();
   };
 
   const filteredEvents = events.filter((event) => {
@@ -171,295 +127,172 @@ export default function PlannerReviewsPage() {
     });
   };
 
-  // Format review date
-  const formatReviewDate = (timestamp) => {
-    if (!timestamp) return "";
-    
-    let date;
-    if (timestamp._seconds) {
-      date = new Date(timestamp._seconds * 1000);
-    } else if (timestamp.toDate) {
-      date = timestamp.toDate();
-    } else {
-      date = new Date(timestamp);
-    }
-    
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
-
-  // Render star rating
-  const renderRating = (rating) => {
-    const stars = [];
-    for (let i = 1; i <= 5; i++) {
-      if(i <= rating){
-        stars.push(<Star/>);
-      }
-    }
-    return <div className="planner-reviews-review-rating">{stars}</div>;
-  };
-
   if (loading) {
     return (
-      <section className="planner-reviews-loading">
-        <section className="planner-reviews-spinner"></section>
+      <section className="reviews-page-loading">
+        <section className="spinner"></section>
         <p>Loading your events and vendors...</p>
       </section>
     );
   }
 
   return (
-    <section className="planner-reviews-container">
-      <header className="planner-reviews-header">
+    <section className="planner-reviews-page">
+      <header className="reviews-page-header">
         <h1>Review Vendors</h1>
         <p>Share your experience with vendors from your events</p>
       </header>
 
-      {/* Navigation Tabs */}
-      <div className="planner-reviews-filter">
+      <section className="reviews-filter">
         <button
-          className={`planner-reviews-filter-btn ${activeTab === "events" ? "active" : ""}`}
-          onClick={() => setActiveTab("events")}
+          className={`filter-btn ${filter === "all" ? "active" : ""}`}
+          onClick={() => setFilter("all")}
         >
-          My Events
+          All Events
         </button>
         <button
-          className={`planner-reviews-filter-btn ${activeTab === "reviews" ? "active" : ""}`}
-          onClick={() => setActiveTab("reviews")}
+          className={`filter-btn ${filter === "past" ? "active" : ""}`}
+          onClick={() => setFilter("past")}
         >
-          My Reviews ({reviews.length})
+          Past Events
         </button>
-      </div>
+        <button
+          className={`filter-btn ${filter === "upcoming" ? "active" : ""}`}
+          onClick={() => setFilter("upcoming")}
+        >
+          Upcoming Events
+        </button>
+      </section>
 
-      {/* Events Tab Content */}
-      {activeTab === "events" && (
-        <>
-          <section className="planner-reviews-filter">
-            <button
-              className={`planner-reviews-filter-btn ${filter === "all" ? "active" : ""}`}
-              onClick={() => setFilter("all")}
+      <section className="events-list">
+        {filteredEvents.length === 0 ? (
+          <section className="no-events">
+            <svg
+              width="64"
+              height="64"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
             >
-              All Events
-            </button>
-            <button
-              className={`planner-reviews-filter-btn ${filter === "past" ? "active" : ""}`}
-              onClick={() => setFilter("past")}
-            >
-              Past Events
-            </button>
-            <button
-              className={`planner-reviews-filter-btn ${filter === "upcoming" ? "active" : ""}`}
-              onClick={() => setFilter("upcoming")}
-            >
-              Upcoming Events
-            </button>
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            <h3>No events found</h3>
+            <p>
+              {filter === "past"
+                ? "You don't have any past events yet"
+                : filter === "upcoming"
+                ? "You don't have any upcoming events"
+                : "You haven't created any events yet"}
+            </p>
           </section>
-
-          <section className="planner-reviews-section-header">
-            <h2>Events to Review</h2>
-            <span className="planner-reviews-section-badge">
-              {filteredEvents.length} event{filteredEvents.length !== 1 ? "s" : ""}
-            </span>
-          </section>
-
-          <section className="planner-reviews-events-list">
-            {filteredEvents.length === 0 ? (
-              <section className="planner-reviews-no-events">
-                <svg
-                  width="64"
-                  height="64"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <rect
-                    x="3"
-                    y="4"
-                    width="18"
-                    height="18"
-                    rx="2"
-                    ry="2"
-                  />
-                  <line x1="16" y1="2" x2="16" y2="6" />
-                  <line x1="8" y1="2" x2="8" y2="6" />
-                  <line x1="3" y1="10" x2="21" y2="10" />
-                </svg>
-                <h3>No events found</h3>
-                <p>
-                  {filter === "past"
-                    ? "You don't have any past events yet"
-                    : filter === "upcoming"
-                    ? "You don't have any upcoming events"
-                    : "You haven't created any events yet"}
-                </p>
-              </section>
-            ) : (
-              filteredEvents.map((event) => {
-                const eventVendors = vendorsByEvent[event.id] || [];
-
-                return (
-                  <section key={event.id} className="planner-reviews-event-card">
-                    <section className="planner-reviews-event-header">
-                      <section className="planner-reviews-event-info">
-                        <h2>{event.name}</h2>
-                        <p className="planner-reviews-event-date">
-                          <Calendar size={14} />
-                          {formatDate(event.date)}
-                        </p>
-                        <p className="planner-reviews-event-location">
-                          <MapPin size={14} />
-                          {event.location ||
-                            "Location not set"}
-                        </p>
-                      </section>
-                      <span
-                        className={`planner-reviews-event-status ${event.isPast ? "past" : "upcoming"}`}
+        ) : (
+          filteredEvents.map((event) => {
+            const eventVendors = vendorsByEvent[event.id] || [];
+            
+            return (
+              <section key={event.id} className="event-card">
+                <section className="event-card-header">
+                  <section className="event-info">
+                    <h2>{event.name}</h2>
+                    <p className="event-date">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
                       >
-                        {event.isPast
-                          ? "Past Event"
-                          : "Upcoming Event"}
-                      </span>
-                    </section>
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                      </svg>
+                      {formatDate(event.date)}
+                    </p>
+                    <p className="event-location">
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                        <circle cx="12" cy="10" r="3" />
+                      </svg>
+                      {event.location || "Location not set"}
+                    </p>
+                  </section>
+                  <span className={`event-status ${event.isPast ? "past" : "upcoming"}`}>
+                    {event.isPast ? "Past Event" : "Upcoming Event"}
+                  </span>
+                </section>
 
-                    <section className="planner-reviews-vendors-section">
-                      {eventVendors.length === 0 ? (
-                        <p className="planner-reviews-no-vendors">
-                          No vendors for this event
-                        </p>
-                      ) : (
-                        <section className="planner-reviews-vendors-grid">
-                          {eventVendors.map((vendor) => (
-                            <section
-                              key={vendor.vendorId}
-                              className="planner-reviews-vendor-card"
-                            >
-                              <section className="planner-reviews-vendor-header">
-                                <h4>
-                                  {vendor.vendorName}
-                                </h4>
-                                <span className="planner-reviews-services-count">
-                                  {
-                                    vendor.services
-                                      .length
-                                  }{" "}
-                                  service
-                                  {vendor.services
-                                    .length !== 1
-                                    ? "s"
-                                    : ""}
+                <section className="vendors-section">
+                  {eventVendors.length === 0 ? (
+                    <p className="no-vendors">No vendors for this event</p>
+                  ) : (
+                    <section className="vendors-grid">
+                      {eventVendors.map((vendor) => (
+                        <section key={vendor.vendorId} className="vendor-card">
+                          <section className="vendor-card-header">
+                            <h4>{vendor.vendorName}</h4>
+                            <span className="services-count">
+                              {vendor.services.length} service
+                              {vendor.services.length !== 1 ? "s" : ""}
+                            </span>
+                          </section>
+
+                          <section className="vendor-services-list">
+                            {vendor.services.map((service) => (
+                              <section key={service.id} className="service-item-small">
+                                <span className="service-name">{service.serviceName}</span>
+                                <span className={`service-status ${service.status}`}>
+                                  {service.status}
                                 </span>
                               </section>
+                            ))}
+                          </section>
 
-                              <section className="planner-reviews-vendor-services">
-                                {vendor.services.map(
-                                  (service) => (
-                                    <section
-                                      key={
-                                        service.id
-                                      }
-                                      className="planner-reviews-service-item"
-                                    >
-                                      <span className="planner-reviews-service-name">
-                                        {
-                                          service.serviceName
-                                        }
-                                      </span>
-                                      <span
-                                        className={`planner-reviews-service-status ${service.status}`}
-                                      >
-                                        {
-                                          service.status
-                                        }
-                                      </span>
-                                    </section>
-                                  )
-                                )}
-                              </section>
-
-                              <button
-                                className="planner-reviews-vendor-btn"
-                                onClick={() => handleReviewVendor(vendor, event)}
-                              >
-                                <Star/>
-                                Write Review
-                              </button>
-                            </section>
-                          ))}
+                          <button
+                            className="review-vendor-btn"
+                            onClick={() => handleReviewVendor(vendor, event)}
+                          >
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                            >
+                              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                            </svg>
+                            Write Review
+                          </button>
                         </section>
-                      )}
+                      ))}
                     </section>
-                  </section>
-                );
-              })
-            )}
-          </section>
-        </>
-      )}
-
-      {/* Reviews Tab Content */}
-      {activeTab === "reviews" && (
-        <section className="planner-reviews-user-reviews">
-          <section className="planner-reviews-section-header">
-            <h2>My Reviews</h2>
-            <span className="planner-reviews-section-badge">
-              {reviews.length} review{reviews.length !== 1 ? "s" : ""}
-            </span>
-          </section>
-          
-          {reviewsLoading ? (
-            <section className="planner-reviews-loading">
-              <section className="planner-reviews-spinner"></section>
-              <p>Loading your reviews...</p>
-            </section>
-          ) : reviews.length === 0 ? (
-            <section className="planner-reviews-empty-reviews">
-              <svg
-                width="64"
-                height="64"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-              </svg>
-              <h3>No reviews yet</h3>
-              <p>You haven't written any reviews yet. Start by reviewing vendors from your past events.</p>
-            </section>
-          ) : (
-            <section className="planner-reviews-list">
-              {reviews.map((review) => (
-                <section key={review.id} className="planner-reviews-review-card">
-                  <section className="planner-reviews-review-header">
-                    <h3 className="planner-reviews-review-vendor-name">{review.serviceName || "Vendor"}</h3>
-                    {renderRating(review.rating || 0)}
-                  </section>
-                  <p className="planner-reviews-review-text">
-                    {review.review || "No review text provided."}
-                  </p>
-                  <p className="planner-reviews-review-date">
-                    {formatReviewDate(review.createdAt || review.timeOfReview)}
-                  </p>
+                  )}
                 </section>
-              ))}
-            </section>
-          )}
-        </section>
-      )}
+              </section>
+            );
+          })
+        )}
+      </section>
 
       {showReviewModal && selectedVendor && (
         <PlannerReviewVendor
           vendorId={selectedVendor.vendorId}
           vendorName={selectedVendor.vendorName}
           eventId={selectedVendor.eventId}
-          serviceName={
-            selectedVendor.services[0]?.serviceName ||
-            "Multiple Services"
-          }
+          serviceName={selectedVendor.services[0]?.serviceName || "Multiple Services"}
           onClose={() => {
             setShowReviewModal(false);
             setSelectedVendor(null);

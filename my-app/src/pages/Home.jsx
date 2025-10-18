@@ -2,7 +2,6 @@ import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Shield, Calendar, ChefHat, ArrowRight } from "lucide-react";
 import { getAuth } from "firebase/auth";
-import BASE_URL from "../apiConfig";
 
 import "./Home.css";
 
@@ -12,25 +11,29 @@ export default function Home() {
 	const navigate = useNavigate();
 	const auth = getAuth();
 
+
 	const navPlannerDashboard = async () => {
-		try {
+
+		try{
 			if (!auth.currentUser) {
-				alert("You must be logged in");
-				return;
+					alert("You must be logged in");
+					return;
 			}
 
 			const token = await auth.currentUser.getIdToken();
 
-			const res = await fetch(`${BASE_URL}/planner/event-status-update`, {
+			const res = await fetch(`https://us-central1-planit-sdp.cloudfunctions.net/api/planner/event-status-update`, {
 				headers: {
-					Authorization: `Bearer ${token}`,
-				},
+					"Authorization": `Bearer ${token}`
+				}
 			});
 
 			navigate("/planner-dashboard");
-		} catch (err) {
+		}
+		catch(err){
 			console.error(err);
 		}
+
 	};
 	const navVendorApply = async () => {
 		try {
@@ -40,10 +43,13 @@ export default function Home() {
 			}
 
 			const token = await auth.currentUser.getIdToken();
-			const res = await fetch(`${BASE_URL}/vendor/status`, {
-				method: "GET",
-				headers: { Authorization: `Bearer ${token}` },
-			});
+			const res = await fetch(
+				"https://us-central1-planit-sdp.cloudfunctions.net/api/vendor/status",
+				{
+					method: "GET",
+					headers: { Authorization: `Bearer ${token}` },
+				}
+			);
 
 			const data = await res.json();
 

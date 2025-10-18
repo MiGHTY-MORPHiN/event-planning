@@ -125,7 +125,6 @@ app.post('/vendor/apply', authenticate, async (req, res) => {
 });
 
 
-
 // Get the vendor profile
 app.get('/vendor/me', authenticate, async (req, res) => {
   try {
@@ -1014,68 +1013,28 @@ app.get('/planner/events/:eventId/bestvendors', authenticate, async (req, res) =
     // Fetch approved vendors
     const vendorSnap = await db.collection("Vendor")
       .where("status", "==", "approved")
-      .limit(100)
       .get();
 
     if (vendorSnap.empty) return res.status(200).json({ vendors: [] });
 
-    // Batch process vendors to avoid memory issues
-    const batchSize = 25; // Process 25 vendors at a time
-    const vendorDocs = vendorSnap.docs;
-    const allVendors = [];
+    // Fetch vendor services for each vendor
+    const vendors = [];
+    for (const doc of vendorSnap.docs) {
+      const vendor = { id: doc.id, ...doc.data() };
 
-    for (let i = 0; i < vendorDocs.length; i += batchSize) {
-      const batch = vendorDocs.slice(i, i + batchSize);
-      
-      // Fetch services for this batch of vendors in parallel
-      const batchPromises = batch.map(async (doc) => {
-        try {
-          const vendor = { id: doc.id, ...doc.data() };
+      // Get services for this vendor
+      const servicesSnap = await db.collection("Vendor").doc(doc.id).collection("Services").get();
+      vendor.services = servicesSnap.docs.map(s => ({ id: s.id, ...s.data() }));
 
-          // Get services for this vendor with limit
-          const servicesSnap = await db.collection("Vendor")
-            .doc(doc.id)
-            .collection("Services")
-            .limit(50) // Limit services per vendor
-            .get();
-
-          vendor.services = servicesSnap.docs.map(s => ({ id: s.id, ...s.data() }));
-
-          // Score the vendor
-          vendor.score = scoreVendor(vendor, category);
-          
-          return vendor;
-        } catch (error) {
-          console.error(`Error processing vendor ${doc.id}:`, error);
-          return null; // Skip failed vendors
-        }
-      });
-
-      // Wait for batch to complete
-      const batchResults = await Promise.allSettled(batchPromises);
-      
-      // Add successful results to allVendors
-      batchResults.forEach(result => {
-        if (result.status === 'fulfilled' && result.value) {
-          allVendors.push(result.value);
-        }
-      });
-
-      // Small delay between batches to prevent overwhelming the database
-      if (i + batchSize < vendorDocs.length) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
+      // Score the vendor
+      vendor.score = scoreVendor(vendor, category);
+      vendors.push(vendor);
     }
 
-    // Sort by score descending and limit final results
-    const sortedVendors = allVendors
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 50); // Return top 50 vendors max
+    // Sort by score descending
+    const sortedVendors = vendors.sort((a, b) => b.score - a.score);
 
-    res.status(200).json({ 
-      vendors: sortedVendors,
-      totalVendors: sortedVendors.length
-    });
+    res.status(200).json({ vendors: sortedVendors });
   } catch (err) {
     console.error("Error matching vendors:", err);
     res.status(500).json({ error: "Internal server error" });
@@ -1086,14 +1045,10 @@ app.get('/planner/events/:eventId/bestvendors', authenticate, async (req, res) =
 app.get('/planner/:plannerId/bestvendors', authenticate, async (req, res) => {
   try {
     const { plannerId } = req.params;
-        console.log(plannerId);
     if (!plannerId) return res.status(400).json({ error: "Missing plannerId" });
 
-    const eventsSnap = await db.collection("Event")
-      .where("plannerId", "==", plannerId)
-      .limit(50)
-      .get();
-
+    // Get all events created by this planner
+    const eventsSnap = await db.collection("Event").where("plannerId", "==", plannerId).get();
     const categories = new Set();
 
     eventsSnap.forEach(doc => {
@@ -1101,86 +1056,33 @@ app.get('/planner/:plannerId/bestvendors', authenticate, async (req, res) => {
       if (data.eventCategory) categories.add(data.eventCategory.toLowerCase());
     });
 
-    console.log(categories);
-    console.log(eventsSnap.size);
-    console.log(plannerId);
-    if (categories.size === 0) {
-      return res.status(200).json({ vendors: [] });
-    }
-
+    // Fetch approved vendors
     const vendorSnap = await db.collection("Vendor")
       .where("status", "==", "approved")
-      .limit(100)
       .get();
 
     if (vendorSnap.empty) return res.status(200).json({ vendors: [] });
 
-    // Batch process vendors
-    const batchSize = 25;
-    const vendorDocs = vendorSnap.docs;
-    const allVendors = [];
+    const vendors = [];
+    for (const doc of vendorSnap.docs) {
+      const vendor = { id: doc.id, ...doc.data() };
 
-    for (let i = 0; i < vendorDocs.length; i += batchSize) {
-      const batch = vendorDocs.slice(i, i + batchSize);
-      
-      const batchPromises = batch.map(async (doc) => {
-        try {
-          const vendor = { id: doc.id, ...doc.data() };
+      // Get services
+      const servicesSnap = await db.collection("Vendor").doc(doc.id).collection("Service").get();
+      vendor.services = servicesSnap.docs.map(s => ({ id: s.id, ...s.data() }));
 
-          // Get services with limit
-          const servicesSnap = await db.collection("Vendor")
-            .doc(doc.id)
-            .collection("Services")
-            .limit(50)
-            .get();
-
-          vendor.services = servicesSnap.docs.map(s => ({ id: s.id, ...s.data() }));
-
-          // Score vendor based on multiple categories
-          let score = 0;
-          let categoryCount = 0;
-          
-          categories.forEach(cat => {
-            const categoryScore = scoreVendor(vendor, cat);
-            if (categoryScore > 0) {
-              score += categoryScore;
-              categoryCount++;
-            }
-          });
-          
-          // Average score across relevant categories
-          vendor.score = categoryCount > 0 ? score / categoryCount : 0;
-
-          return vendor;
-        } catch (error) {
-          console.error(`Error processing vendor ${doc.id}:`, error);
-          return null;
-        }
+      // Score vendor based on multiple categories
+      let score = 0;
+      categories.forEach(cat => {
+        score += scoreVendor(vendor, cat);
       });
+      vendor.score = score;
 
-      const batchResults = await Promise.allSettled(batchPromises);
-      
-      batchResults.forEach(result => {
-        if (result.status === 'fulfilled' && result.value) {
-          allVendors.push(result.value);
-        }
-      });
-
-      // Delay between batches
-      if (i + batchSize < vendorDocs.length) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
+      vendors.push(vendor);
     }
 
-    // Sort and limit results
-    const sortedVendors = allVendors
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 50);
-
-    res.status(200).json({ 
-      vendors: sortedVendors,
-      totalVendors: sortedVendors.length
-    });
+    const sorted = vendors.sort((a, b) => b.score - a.score);
+    res.status(200).json({ vendors: sorted });
   } catch (err) {
     console.error("Error recommending vendors:", err);
     res.status(500).json({ error: "Internal Server error" });
@@ -2131,6 +2033,7 @@ app.get('/planner/my-reviews', authenticate, async (req, res) => {
 
     const reviewsSnapshot = await db.collection('Reviews')
       .where('plannerId', '==', plannerId)
+      .orderBy('createdAt', 'desc')
       .get();
 
     const reviews = reviewsSnapshot.docs.map(doc => ({
@@ -2325,6 +2228,65 @@ app.post('/planner/contracts/:eventId/:contractId/:fieldId/signatures/upload',
     }
   }
 );
+
+//Amahle
+// Add this NEW endpoint after the planner signature upload endpoint
+app.post('/vendor/contracts/:eventId/:contractId/vendor-signature/upload',
+  authenticate,
+  busboyUploadToStorageMiddleware(undefined,
+     (req) => `Signatures/${req.params.eventId}/${req.params.contractId}/vendor_signature_${new Date().toISOString().replace(/[:.]/g, '-')}.png`),
+  async (req, res) => {
+    try {
+      const { eventId, contractId } = req.params;
+      const vendorId = req.uid;
+
+      if (!eventId || !contractId) {
+        return res.status(400).json({ message: 'Missing required fields' });
+      }
+      
+      // Check if file was uploaded
+      if (!req.uploads || Object.keys(req.uploads).length === 0) {
+        return res.status(400).json({ message: 'No signature file uploaded' });
+      }
+
+      // Get the uploaded file
+      const uploadedFile = Object.values(req.uploads)[0];
+      
+      // Generate permanent download URL
+      const token = uuidv4();
+      await uploadedFile.setMetadata({
+        metadata: {
+          firebaseStorageDownloadTokens: token,
+        },
+      });
+
+      const downloadURL = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(uploadedFile.name)}?alt=media&token=${token}`;
+
+      // Save vendor signature metadata to audit collection
+      await db.collection('SignatureAudit').add({
+        fieldId: 'vendor_signature',
+        signerId: vendorId,
+        signerRole: 'vendor',
+        contractId,
+        eventId,
+        signatureUrl: downloadURL,
+        signedAt: new Date().toISOString(),
+        ipAddress: req.ip || null,
+        userAgent: req.headers['user-agent'] || null,
+      });
+
+      res.json({ 
+        downloadURL,
+        message: 'Vendor signature uploaded successfully'
+      });
+    } catch (err) {
+      console.error('Error uploading vendor signature:', err);
+      res.status(500).json({ message: 'Server error', error: err.message });
+    }
+  }
+);
+
+
 
 // Save draft signatures
 app.post('/planner/contracts/:contractId/signatures/draft', authenticate, async (req, res) => {
@@ -2742,45 +2704,8 @@ app.delete('/admin/events/:eventId', async (req, res) => {
 });
 
 
-// Unprotected: Get all events for a user by UID (guid)
-app.get('/public/user/:uid/events', async (req, res) => {
-  try {
-    const uid = req.params.uid;
-    const snapshot = await db.collection("Event")
-      .where("plannerId", "==", uid)
-      .get();
-
-    if (snapshot.empty) {
-      return res.json({ uid, events: [] });
-    }
-
-    const events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    res.json({ uid, events });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-// Unprotected guest list endpoint (public)
-app.get('/public/event/:eventId/guests', async (req, res) => {
-  try {
-    const eventId = req.params.eventId;
-    const snapshot = await db.collection("Event").doc(eventId).collection("Guests").get();
-
-    if (snapshot.empty) {
-      return res.json({ message: "No guests found for this event" });
-    }
-
-    const guests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    res.json({ eventId, guests });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-
+const publicRoutes = require("./publicRoutes.js")(db, bucket, EXTERNAL_API_KEY);
+app.use("/public", publicRoutes);
 
 
 // =================================================================
@@ -2852,8 +2777,9 @@ app.put('/admin/me', authenticate, async (req, res) => {
 
     await db.collection('Admin').doc(req.uid).update({ fullName,
       phone,
+      email,
       ...(profilePicURL && { profilePic: profilePicURL }),
-      updatedAt: 'admin.firestore.FieldValue.serverTimestamp()',
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
     res.json({ message: 'Profile updated successfully' });
@@ -3070,7 +2996,7 @@ app.post('/contracts/:contractId/signature-fields', authenticate, async (req, re
  */
 app.get('/admin/vendors', authenticate, async (req, res) => {
   try {
-    const snapshot = await db.collection('Vendor').where('status', '==', 'approved').get();
+    const snapshot = await db.collection('Vendor').get();
     if (snapshot.empty) {
       return res.json([]);
     }
@@ -3088,19 +3014,12 @@ app.get('/admin/vendors', authenticate, async (req, res) => {
 // Get a list of all planners.
 app.get('/admin/planners', authenticate, async (req, res) => {
   try {
-    const plannersSnapshot = await db.collection('Planner').get();
-    if (plannersSnapshot.empty) {
+    const snapshot = await db.collection('Planner').get();
+    if (snapshot.empty) {
       return res.json([]);
     }
-
-    const plannersData = await Promise.all(plannersSnapshot.docs.map(async (doc) => {
-      const planner = { id: doc.id, ...doc.data() };
-      const eventsSnapshot = await db.collection('Event').where('plannerId', '==', doc.id).get();
-      planner.events = eventsSnapshot.docs.map(eventDoc => ({ id: eventDoc.id, ...eventDoc.data() }));
-      return planner;
-    }));
-
-    res.json(plannersData);
+    const planners = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    res.json(planners);
   } catch (err) {
     console.error('Error fetching planners:', err);
     res.status(500).json({ message: 'Server error while fetching planners' });
@@ -3377,6 +3296,25 @@ app.get('/admin/vendors', authenticate, async (req, res) => {
   } catch (err) {
     console.error('Error fetching vendors:', err);
     res.status(500).json({ message: 'Server error while fetching vendors' });
+  }
+});
+
+/**
+ * @route   GET /api/admin/planners
+ * @desc    Get a list of all planners.
+ * @access  Private (Admin Only)
+ */
+app.get('/admin/planners', authenticate, async (req, res) => {
+  try {
+    const snapshot = await db.collection('Planner').get();
+    if (snapshot.empty) {
+      return res.json([]);
+    }
+    const planners = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    res.json(planners);
+  } catch (err) {
+    console.error('Error fetching planners:', err);
+    res.status(500).json({ message: 'Server error while fetching planners' });
   }
 });
 

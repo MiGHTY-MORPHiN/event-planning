@@ -1,56 +1,32 @@
-/* PlannerReview.css - Updated with Improved Dark Mode and Specific Class Names */
-
 /* Reviews Page Main Container */
-.planner-reviews-container {
+.planner-reviews-page {
   padding: 32px;
   max-width: 1400px;
   margin: 0 auto;
   background-color: #f9fafb;
   min-height: 100vh;
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .planner-reviews-container {
-    background-color: #11182F;
-    color: #e5e7eb;
-  }
 }
 
 /* Header */
-.planner-reviews-header {
+.reviews-page-header {
   margin-bottom: 32px;
 }
 
-.planner-reviews-header h1 {
+.reviews-page-header h1 {
   font-size: 32px;
   font-weight: 700;
   color: #1f2937;
   margin: 0 0 8px 0;
-  transition: color 0.3s ease;
 }
 
-.planner-reviews-header p {
+.reviews-page-header p {
   font-size: 16px;
   color: #6b7280;
   margin: 0;
-  transition: color 0.3s ease;
-}
-
-/* Dark mode header */
-@media (prefers-color-scheme: dark) {
-  .planner-reviews-header h1 {
-    color: #f9fafb;
-  }
-  
-  .planner-reviews-header p {
-    color: #d1d5db;
-  }
 }
 
 /* Loading State */
-.planner-reviews-loading {
+.reviews-page-loading {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -59,49 +35,36 @@
   gap: 16px;
 }
 
-.planner-reviews-spinner {
+.spinner {
   width: 48px;
   height: 48px;
   border: 4px solid #e5e7eb;
   border-top-color: #2563eb;
   border-radius: 50%;
-  animation: planner-reviews-spin 1s linear infinite;
+  animation: spin 1s linear infinite;
 }
 
-@keyframes planner-reviews-spin {
+@keyframes spin {
   to { transform: rotate(360deg); }
 }
 
-.planner-reviews-loading p {
+.reviews-page-loading p {
   font-size: 16px;
   color: #6b7280;
-  transition: color 0.3s ease;
-}
-
-/* Dark mode loading */
-@media (prefers-color-scheme: dark) {
-  .planner-reviews-spinner {
-    border-color: #4b5563;
-    border-top-color: #3b82f6;
-  }
-  
-  .planner-reviews-loading p {
-    color: #9ca3af;
-  }
 }
 
 /* Filter Buttons */
-.planner-reviews-filter {
+.reviews-filter {
   display: flex;
   gap: 12px;
   margin-bottom: 24px;
   flex-wrap: wrap;
 }
 
-.planner-reviews-filter-btn {
+.filter-btn {
   padding: 10px 20px;
   border: 2px solid #e5e7eb;
-  background: white;
+  background-color: white;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
@@ -110,129 +73,69 @@
   transition: all 0.2s ease;
 }
 
-.planner-reviews-filter-btn:hover {
-  border: #d1d5db;
+.filter-btn:hover {
+  border-color: #d1d5db;
   color: #374151;
 }
 
-.planner-reviews-filter-btn.active {
-  background: #2563eb;
+.filter-btn.active {
+  background-color: #2563eb;
   border-color: #2563eb;
   color: white;
 }
 
-/* Dark mode filter buttons */
-@media (prefers-color-scheme: dark) {
-  .planner-reviews-filter-btn {
-    background: #374151;
-    border-color: #4b5563;
-    color: #d1d5db;
-  }
-  
-  .planner-reviews-filter-btn:hover {
-    border-color: #6b7280;
-    color: #f3f4f6;
-  }
-  
-  .planner-reviews-filter-btn.active {
-    background: #3b82f6;
-    border-color: #3b82f6;
-    color: white;
-  }
-}
-
 /* Events List */
-.planner-reviews-events-list {
+.events-list {
   display: flex;
   flex-direction: column;
   gap: 24px;
 }
 
 /* Event Card */
-.planner-reviews-event-card {
+.event-card {
   background: white;
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: box-shadow 0.2s ease, background-color 0.3s ease;
+  transition: box-shadow 0.2s ease;
 }
 
-.planner-reviews-event-card:hover {
+.event-card:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* Dark mode event card */
-@media (prefers-color-scheme: dark) {
-  .planner-reviews-event-card {
-    background: #1f2937;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  }
-  
-  .planner-reviews-event-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  }
-}
-
-.planner-reviews-event-header {
+.event-card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 24px;
   padding-bottom: 20px;
   border-bottom: 2px solid #f3f4f6;
-  transition: border-color 0.3s ease;
 }
 
-/* Dark mode event card header */
-@media (prefers-color-scheme: dark) {
-  .planner-reviews-event-header {
-    border-bottom-color: #4b5563;
-  }
-}
-
-.planner-reviews-event-info h2 {
+.event-info h2 {
   font-size: 24px;
   font-weight: 600;
   color: #1f2937;
   margin: 0 0 12px 0;
-  transition: color 0.3s ease;
 }
 
-.planner-reviews-event-date,
-.planner-reviews-event-location {
+.event-date,
+.event-location {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 14px;
   color: #6b7280;
   margin: 8px 0;
-  transition: color 0.3s ease;
 }
 
-.planner-reviews-event-date svg,
-.planner-reviews-event-location svg {
+.event-date svg,
+.event-location svg {
   color: #9ca3af;
-  transition: color 0.3s ease;
 }
 
-/* Dark mode event info */
-@media (prefers-color-scheme: dark) {
-  .planner-reviews-event-info h2 {
-    color: #f9fafb;
-  }
-  
-  .planner-reviews-event-date,
-  .planner-reviews-event-location {
-    color: #d1d5db;
-  }
-  
-  .planner-reviews-event-date svg,
-  .planner-reviews-event-location svg {
-    color: #9ca3af;
-  }
-}
-
-.planner-reviews-event-status {
+.event-status {
   padding: 8px 16px;
   border-radius: 20px;
   font-size: 12px;
@@ -241,130 +144,80 @@
   letter-spacing: 0.5px;
 }
 
-.planner-reviews-event-status.past {
+.event-status.past {
   background-color: #e5e7eb;
   color: #4b5563;
 }
 
-.planner-reviews-event-status.upcoming {
+.event-status.upcoming {
   background-color: #dbeafe;
   color: #1e40af;
 }
 
-/* Dark mode event status */
-@media (prefers-color-scheme: dark) {
-  .planner-reviews-event-status.past {
-    background-color: #4b5563;
-    color: #d1d5db;
-  }
-  
-  .planner-reviews-event-status.upcoming {
-    background-color: #1e3a8a;
-    color: #dbeafe;
-  }
-}
-
 /* Vendors Section */
-.planner-reviews-vendors-section {
+.vendors-section {
   margin-top: 20px;
 }
 
-.planner-reviews-no-vendors {
+.no-vendors {
   text-align: center;
   padding: 40px;
   color: #9ca3af;
   font-size: 14px;
-  transition: color 0.3s ease;
 }
 
-/* Dark mode no vendors */
-@media (prefers-color-scheme: dark) {
-  .planner-reviews-no-vendors {
-    color: #6b7280;
-  }
-}
-
-.planner-reviews-vendors-grid {
+.vendors-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 16px;
 }
 
 /* Vendor Card */
-.planner-reviews-vendor-card {
-  display: flex;
-  flex-direction: column;
+.vendor-card {
   background: #f9fafb;
   border: 1px solid #e5e7eb;
   border-radius: 10px;
   padding: 20px;
-  transition: all 0.2s ease, background-color 0.3s ease, border-color 0.3s ease;
+  transition: all 0.2s ease;
 }
 
-.planner-reviews-vendor-card:hover {
+.vendor-card:hover {
   border-color: #d1d5db;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-/* Dark mode vendor card */
-@media (prefers-color-scheme: dark) {
-  .planner-reviews-vendor-card {
-    background: #111827;
-    border-color: #111820;
-  }
-  
-  .planner-reviews-vendor-card:hover {
-    border-color: #9ca3af;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  }
-}
-
-.planner-reviews-vendor-header {
+.vendor-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
 }
 
-.planner-reviews-vendor-header h4 {
+.vendor-card-header h4 {
   font-size: 18px;
   font-weight: 600;
   color: #1f2937;
   margin: 0;
-  transition: color 0.3s ease;
 }
 
-.planner-reviews-services-count {
+.services-count {
   font-size: 12px;
   color: #6b7280;
   background-color: #e5e7eb;
   padding: 4px 10px;
   border-radius: 12px;
   font-weight: 500;
-  transition: color 0.3s ease, background-color 0.3s ease;
-}
-
-/* Dark mode vendor card header */
-@media (prefers-color-scheme: dark) {
-  .planner-reviews-vendor-header h4 {
-    color: #f9fafb;
-  }
-  
-  .planner-reviews-services-count {
-    color: #d1d5db;
-    background-color: #6b7280;
-  }
 }
 
 /* Vendor Services List */
-.planner-reviews-vendor-services {
+.vendor-services-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
   margin-bottom: 16px;
 }
 
-.planner-reviews-service-item {
+.service-item-small {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -372,30 +225,14 @@
   background: white;
   border-radius: 6px;
   font-size: 13px;
-  transition: background-color 0.3s ease;
 }
 
-/* Dark mode service items */
-@media (prefers-color-scheme: dark) {
-  .planner-reviews-service-item {
-    background: #374151;
-  }
-}
-
-.planner-reviews-service-name {
+.service-name {
   color: #374151;
   font-weight: 500;
-  transition: color 0.3s ease;
 }
 
-/* Dark mode service name */
-@media (prefers-color-scheme: dark) {
-  .planner-reviews-service-name {
-    color: #e5e7eb;
-  }
-}
-
-.planner-reviews-service-status {
+.service-status {
   padding: 4px 8px;
   border-radius: 10px;
   font-size: 11px;
@@ -403,39 +240,25 @@
   text-transform: uppercase;
 }
 
-.planner-reviews-service-status.confirmed {
+.service-status.confirmed {
   background-color: #d1fae5;
   color: #065f46;
 }
 
-.planner-reviews-service-status.pending {
+.service-status.pending {
   background-color: #fef3c7;
   color: #92400e;
 }
 
-/* Dark mode service status */
-@media (prefers-color-scheme: dark) {
-  .planner-reviews-service-status.confirmed {
-    background-color: #065f46;
-    color: #d1fae5;
-  }
-  
-  .planner-reviews-service-status.pending {
-    background-color: #92400e;
-    color: #fef3c7;
-  }
-}
-
 /* Review Vendor Button */
-.planner-reviews-vendor-btn {
+.review-vendor-btn {
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   padding: 12px;
-  margin-top: auto;
-  background: #2563eb;
+  background-color: #f59e0b;
   color: white;
   border: none;
   border-radius: 8px;
@@ -443,130 +266,20 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
 }
 
-.planner-reviews-vendor-btn:hover {
-  background: #1d4ed8;
+.review-vendor-btn:hover {
+  background-color: #d97706;
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3);
 }
 
-.planner-reviews-vendor-btn:active {
+.review-vendor-btn:active {
   transform: translateY(0);
 }
 
-/* Reviews Section */
-.planner-reviews-user-reviews {
-  margin-top: 48px;
-  padding-top: 32px;
-  border-top: 2px solid #f3f4f6;
-  transition: border-color 0.3s ease;
-}
-
-.planner-reviews-user-reviews h2 {
-  font-size: 24px;
-  font-weight: 600;
-  color: #1f2937;
-  margin-bottom: 24px;
-  transition: color 0.3s ease;
-}
-
-.planner-reviews-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.planner-reviews-review-card {
-  background: white;
-  border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease, background-color 0.3s ease;
-}
-
-.planner-reviews-review-card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.planner-reviews-review-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-}
-
-.planner-reviews-review-vendor-name {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1f2937;
-  transition: color 0.3s ease;
-}
-
-.planner-reviews-review-rating {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.planner-reviews-review-event {
-  font-size: 14px;
-  color: #6b7280;
-  margin-bottom: 12px;
-  transition: color 0.3s ease;
-}
-
-.planner-reviews-review-text {
-  font-size: 14px;
-  line-height: 1.5;
-  color: #4b5563;
-  margin-bottom: 12px;
-  transition: color 0.3s ease;
-}
-
-.planner-reviews-review-date {
-  font-size: 12px;
-  color: #9ca3af;
-  text-align: right;
-}
-
-/* Dark mode reviews section */
-@media (prefers-color-scheme: dark) {
-  .planner-reviews-user-reviews {
-    border-top-color: #4b5563;
-  }
-  
-  .planner-reviews-user-reviews h2 {
-    color: #f9fafb;
-  }
-  
-  .planner-reviews-review-card {
-    background: #1f2937;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  }
-  
-  .planner-reviews-review-card:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-  }
-  
-  .planner-reviews-review-vendor-name {
-    color: #f9fafb;
-  }
-  
-  .planner-reviews-review-event {
-    color: #d1d5db;
-  }
-  
-  .planner-reviews-review-text {
-    color: #e5e7eb;
-  }
-}
-
 /* No Events State */
-.planner-reviews-no-events {
+.no-events {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -575,201 +288,74 @@
   background: white;
   border-radius: 12px;
   border: 2px dashed #d1d5db;
-  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
-.planner-reviews-no-events svg {
+.no-events svg {
   color: #d1d5db;
   margin-bottom: 16px;
-  transition: color 0.3s ease;
 }
 
-.planner-reviews-no-events h3 {
+.no-events h3 {
   font-size: 20px;
   font-weight: 600;
   color: #374151;
   margin: 0 0 8px 0;
-  transition: color 0.3s ease;
 }
 
-.planner-reviews-no-events p {
+.no-events p {
   font-size: 14px;
   color: #6b7280;
   margin: 0;
-  transition: color 0.3s ease;
-}
-
-/* Dark mode no events */
-@media (prefers-color-scheme: dark) {
-  .planner-reviews-no-events {
-    background: #374151;
-    border-color: #6b7280;
-  }
-  
-  .planner-reviews-no-events svg {
-    color: #6b7280;
-  }
-  
-  .planner-reviews-no-events h3 {
-    color: #f9fafb;
-  }
-  
-  .planner-reviews-no-events p {
-    color: #d1d5db;
-  }
-}
-
-/* Empty Reviews State */
-.planner-reviews-empty-reviews {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 20px;
-  background: white;
-  border-radius: 12px;
-  border: 2px dashed #d1d5db;
-  transition: background-color 0.3s ease, border-color 0.3s ease;
-}
-
-.planner-reviews-empty-reviews svg {
-  color: #d1d5db;
-  margin-bottom: 16px;
-  transition: color 0.3s ease;
-}
-
-.planner-reviews-empty-reviews h3 {
-  font-size: 20px;
-  font-weight: 600;
-  color: #374151;
-  margin: 0 0 8px 0;
-  transition: color 0.3s ease;
-}
-
-.planner-reviews-empty-reviews p {
-  font-size: 14px;
-  color: #6b7280;
-  margin: 0;
-  transition: color 0.3s ease;
-}
-
-/* Dark mode empty reviews */
-@media (prefers-color-scheme: dark) {
-  .planner-reviews-empty-reviews {
-    background: #374151;
-    border-color: #6b7280;
-  }
-  
-  .planner-reviews-empty-reviews svg {
-    color: #6b7280;
-  }
-  
-  .planner-reviews-empty-reviews h3 {
-    color: #f9fafb;
-  }
-  
-  .planner-reviews-empty-reviews p {
-    color: #d1d5db;
-  }
-}
-
-/* Section Headers */
-.planner-reviews-section-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-.planner-reviews-section-header h2 {
-  font-size: 24px;
-  font-weight: 600;
-  color: #1f2937;
-  margin: 0;
-  transition: color 0.3s ease;
-}
-
-.planner-reviews-section-badge {
-  background-color: #e5e7eb;
-  color: #374151;
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 14px;
-  font-weight: 500;
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-/* Dark mode section headers */
-@media (prefers-color-scheme: dark) {
-  .planner-reviews-section-header h2 {
-    color: #f9fafb;
-  }
-  
-  .planner-reviews-section-badge {
-    background-color: #4b5563;
-    color: #d1d5db;
-  }
 }
 
 /* Responsive Design */
 @media (max-width: 1024px) {
-  .planner-reviews-vendors-grid {
+  .vendors-grid {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   }
 }
 
 @media (max-width: 768px) {
-  .planner-reviews-container {
+  .planner-reviews-page {
     padding: 20px;
   }
 
-  .planner-reviews-header h1 {
+  .reviews-page-header h1 {
     font-size: 28px;
   }
 
-  .planner-reviews-event-header {
+  .event-card-header {
     flex-direction: column;
     gap: 16px;
   }
 
-  .planner-reviews-event-status {
+  .event-status {
     align-self: flex-start;
   }
 
-  .planner-reviews-vendors-grid {
+  .vendors-grid {
     grid-template-columns: 1fr;
-  }
-  
-  .planner-reviews-review-header {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .planner-reviews-section-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
   }
 }
 
 @media (max-width: 480px) {
-  .planner-reviews-container {
+  .planner-reviews-page {
     padding: 16px;
   }
 
-  .planner-reviews-header h1 {
+  .reviews-page-header h1 {
     font-size: 24px;
   }
 
-  .planner-reviews-event-card {
+  .event-card {
     padding: 16px;
   }
 
-  .planner-reviews-filter {
+  .reviews-filter {
     flex-direction: column;
   }
 
-  .planner-reviews-filter-btn {
+  .filter-btn {
     width: 100%;
   }
 }

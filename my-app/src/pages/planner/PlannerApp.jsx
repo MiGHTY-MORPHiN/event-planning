@@ -20,7 +20,7 @@ import "./PlannerApp.css";
 import PlannerViewEvent from "./PlannerViewEvent";
 import PlannerReview from "./PlannerReview";
 import PlannerContract from "./PlannerContract";
-import PlannerFloorPlan from "./PlannerFloorPlan";
+import PlannerFloorPlan from "./components/PlannerFloorPlan";
 import PlannerSchedules from "./PlannerSchedules";
 import PlannerCalendar from "./PlannerCalendar";
 
@@ -41,8 +41,13 @@ const PlannerApp = () => {
 		{ id: "dashboard", label: "Dashboard", icon: BarChart3 },
 		{ id: "events", label: "Events", icon: Calendar },
 		{ id: "vendor", label: "Vendor Marketplace", icon: Users },
+		{
+			id: "schedule management",
+			label: "Schedule Management",
+			icon: Users,
+		},
 		{ id: "floorplan", label: "Floorplan", icon: MapPin },
-		{ id: "review", label: "Reviews", icon: FileText },
+		{ id: "review", label: "Reviews", icon: FileText},
 		{ id: "documents", label: "Documents", icon: FileText },
 	];
 
@@ -75,52 +80,55 @@ const PlannerApp = () => {
 	);
 
 	const renderCurrentPage = () => {
-		switch (activePage) {
-			case "dashboard":
-				return (
-					<PlannerDashboard
-						data-testid="planner-dashboard"
-						setActivePage={setActivePage}
-						onSelectEvent={onSelectEvent} // ✅ Pass the handler
-					/>
-				);
-			case "events":
-				return (
-					<PlannerCalendar
-						setActivePage={setActivePage}
-						onSelectEvent={onSelectEvent}
-					/>
-				);
-			case "vendor":
-				return (
-					<PlannerVendorMarketplace
-						setActivePage={setActivePage}
-						event={selectedEvent}
-					/>
-				);
-			case "floorplan":
-				return <PlannerFloorPlan setActivePage={setActivePage} />;
-			case "documents":
-				return <PlannerContract setActivePage={setActivePage} />;
-			case "selected-event":
-				return (
-					<PlannerViewEvent
-						event={selectedEvent}
-						onOpenMarketplace={onOpenMarketplace}
-						setActivePage={setActivePage}
-					/>
-				);
-			case "review":
-				return <PlannerReview />;
-			default:
-				return (
-					<PlannerDashboard
-						setActivePage={setActivePage}
-						onSelectEvent={onSelectEvent} // ✅ Also here
-					/>
-				);
-		}
-	};
+    switch (activePage) {
+        case "dashboard":
+            return (
+                <PlannerDashboard
+                    data-testid="planner-dashboard"
+                    setActivePage={setActivePage}
+                    onSelectEvent={onSelectEvent} // ✅ Pass the handler
+                />
+            );
+        case "events":
+            return (
+                <PlannerCalendar
+                    setActivePage={setActivePage}
+                    onSelectEvent={onSelectEvent}
+                />
+            );
+        case "vendor":
+            return (
+                <PlannerVendorMarketplace
+                    setActivePage={setActivePage}
+                    event={selectedEvent}
+                />
+            );
+        case "floorplan":
+            return <PlannerFloorPlan setActivePage={setActivePage} />;
+        case "schedule management":
+            return <PlannerSchedules setActivePage={setActivePage} />;
+        case "documents":
+            return <PlannerContract setActivePage={setActivePage} />;
+        case "selected-event":
+            return (
+                <PlannerViewEvent
+                    event={selectedEvent}
+                    onOpenMarketplace={onOpenMarketplace}
+                    setActivePage={setActivePage}
+                />
+            );
+        case "review":
+            return <PlannerReview />;
+        default:
+            return (
+                <PlannerDashboard
+                    setActivePage={setActivePage}
+                    onSelectEvent={onSelectEvent} // ✅ Also here
+                />
+            );
+    }
+};
+
 
 	const onSelectEvent = (event) => {
 		setSelectedEvent(event);
@@ -133,7 +141,7 @@ const PlannerApp = () => {
 	};
 
 	return (
-		<section className="planner-app">
+		<section className="vendor-app">
 			{/* Navigation Bar */}
 			<nav className="vendor-navbar">
 				<section className="navbar-container">
@@ -181,7 +189,7 @@ const PlannerApp = () => {
 			</nav>
 
 			{/* Main Content */}
-			<main className="planner-main">{renderCurrentPage()}</main>
+			<main className="vendor-main">{renderCurrentPage()}</main>
 		</section>
 	);
 };

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { auth } from "../../../firebase";
 import Popup from "../../general/popup/Popup.jsx";
 import "./AdminVendorApplications.css";
-import BASE_URL from "../../../apiConfig";
 
 function AdminVendorApplications() {
 	const [applications, setApplications] = useState([]);
@@ -16,7 +15,8 @@ function AdminVendorApplications() {
 	useEffect(() => {
 		const fetchApplications = async () => {
 			try {
-				const apiUrl = `${BASE_URL}/admin/vendor-applications`;
+				const apiUrl =
+					"https://us-central1-planit-sdp.cloudfunctions.net/api/admin/vendor-applications";
 
 				const response = await fetch(apiUrl); // No auth headers needed for local testing
 
@@ -38,7 +38,7 @@ function AdminVendorApplications() {
 
 	const handleUpdateStatus = async (vendorId, status) => {
 		try {
-			const apiUrl = `${BASE_URL}/admin/vendor-applications/${vendorId}`;
+			const apiUrl = `https://us-central1-planit-sdp.cloudfunctions.net/api/admin/vendor-applications/${vendorId}`;
 
 			const response = await fetch(apiUrl, {
 				method: "PUT",
@@ -71,6 +71,7 @@ function AdminVendorApplications() {
 
 	return (
 		<section className="main-container">
+			<h1>Pending Vendor Applications</h1>
 			<section className="applications-list">
 				{applications.length > 0 ? (
 					<table className="vendor-table">

@@ -1,41 +1,34 @@
 import { useState, useEffect } from "react";
 import "../../planner/PlannerAllEvents.css";
 import { getAuth } from "firebase/auth";
-import BASE_URL from "../../../apiConfig";
-import LoadingSpinner from "../../general/loadingspinner/LoadingSpinner";
 
 function EventCard({ event, onQuickView, onDeleteEvent }) {
 	function formatDate(dateString) {
-		if (!dateString) return "";
+  if (!dateString) return "";
 
-		let jsDate;
+  let jsDate;
 
-		if (
-			typeof dateString === "object" &&
-			typeof dateString._seconds === "number"
-		) {
-			jsDate = new Date(
-				dateString._seconds * 1000 +
-					(dateString._nanoseconds || 0) / 1e6
-			);
-		} else if (dateString instanceof Date) {
-			jsDate = dateString;
-		} else if (typeof dateString === "string") {
-			jsDate = new Date(dateString);
-		} else {
-			return String(dateString);
-		}
+  if (typeof dateString === 'object' && typeof dateString._seconds === 'number') {
+    jsDate = new Date(dateString._seconds * 1000 + (dateString._nanoseconds || 0) / 1e6);
+  } else if (dateString instanceof Date) {
+    jsDate = dateString;
+  } else if (typeof dateString === "string") {
+    jsDate = new Date(dateString);
+  } else {
+    return String(dateString);
+  }
 
-		if (isNaN(jsDate)) return "Invalid Date";
+  if (isNaN(jsDate)) return "Invalid Date";
 
-		const day = String(jsDate.getDate()).padStart(2, "0");
-		const monthName = jsDate.toLocaleString("en-US", { month: "long" });
-		const year = jsDate.getFullYear();
-		const hours = String(jsDate.getHours()).padStart(2, "0");
-		const minutes = String(jsDate.getMinutes()).padStart(2, "0");
+  const day = String(jsDate.getDate()).padStart(2, "0");
+  const monthName = jsDate.toLocaleString("en-US", { month: "long" });
+  const year = jsDate.getFullYear();
+  const hours = String(jsDate.getHours()).padStart(2, "0");
+  const minutes = String(jsDate.getMinutes()).padStart(2, "0");
 
-		return `${day} ${monthName} ${year} @${hours}:${minutes}`;
-	}
+  return `${day} ${monthName} ${year} @${hours}:${minutes}`;
+}
+
 
 	const getStatusColor = (status) => {
 		switch (status) {
@@ -73,10 +66,10 @@ function EventCard({ event, onQuickView, onDeleteEvent }) {
 				<p>{event.description}</p>
 			</section>
 			<section className="event-buttons">
+				
 				<button
-					className="quick-view-btn"
-					onClick={() => onQuickView(event)}
-				>
+				className="quick-view-btn"
+				 onClick={() => onQuickView(event)} >
 					Quick View
 				</button>
 
@@ -92,6 +85,8 @@ function EventCard({ event, onQuickView, onDeleteEvent }) {
 }
 
 export default function AdminAllEvents({ setActivePage, setSelectedEvent }) {
+
+
 	const [search, setSearch] = useState("");
 	const [statusFilter, setStatusFilter] = useState("All");
 	const [sortBy, setSortBy] = useState("date");
@@ -101,20 +96,23 @@ export default function AdminAllEvents({ setActivePage, setSelectedEvent }) {
 	const fetchAdminEvents = async () => {
 		const auth = getAuth();
 		let user = auth.currentUser;
-
-		while (!user) {
-			await new Promise((res) => setTimeout(res, 50)); // wait 50ms
-			user = auth.currentUser;
-		}
+	
+				while (!user) {
+					await new Promise((res) => setTimeout(res, 50)); // wait 50ms
+				user = auth.currentUser;
+				}
 		if (!user) {
 			console.warn("No user signed in");
 			return [];
 		}
 		const token = await user.getIdToken(true);
 
-		const res = await fetch(`${BASE_URL}/admin/events`, {
-			headers: { Authorization: `Bearer ${token}` },
-		});
+		const res = await fetch(
+			`https://us-central1-planit-sdp.cloudfunctions.net/api/admin/events`,
+			{
+				headers: { Authorization: `Bearer ${token}` },
+			}
+		);
 		if (!res.ok) return [];
 
 		const data = await res.json();
@@ -126,10 +124,13 @@ export default function AdminAllEvents({ setActivePage, setSelectedEvent }) {
 		const user = auth.currentUser;
 		const token = await user.getIdToken(true);
 
-		const res = await fetch(`${BASE_URL}/admin/events/${eventId}`, {
-			method: "DELETE",
-			headers: { Authorization: `Bearer ${token}` },
-		});
+		const res = await fetch(
+			`https://us-central1-planit-sdp.cloudfunctions.net/api/admin/events/${eventId}`,
+			{
+				method: "DELETE",
+				headers: { Authorization: `Bearer ${token}` },
+			}
+		);
 
 		if (res.ok) {
 			setEvents((prev) => prev.filter((e) => e.id !== eventId));
@@ -152,9 +153,7 @@ export default function AdminAllEvents({ setActivePage, setSelectedEvent }) {
 		.filter(
 			(event) =>
 				(event.name.toLowerCase().includes(search.toLowerCase()) ||
-					event.location
-						.toLowerCase()
-						.includes(search.toLowerCase())) &&
+					event.location.toLowerCase().includes(search.toLowerCase())) &&
 				(statusFilter === "All" || event.status === statusFilter)
 		)
 		.sort((a, b) => {
@@ -172,18 +171,19 @@ export default function AdminAllEvents({ setActivePage, setSelectedEvent }) {
 			}
 		});
 
-	const handleQuickView = (event) => {
-		setSelectedEvent(event); // ✅ pass whole event object
-		setActivePage("AdminViewEvent");
-	};
+	
+
+const handleQuickView = (event) => {
+  setSelectedEvent(event);       // ✅ pass whole event object
+  setActivePage("AdminViewEvent");
+};
+
 
 	return (
 		<section className="events-list">
 			<section className="events-header">
 				<h2>Events</h2>
-				<p className="events-subtitle">
-					Manage, track, and delete events
-				</p>
+				<p className="events-subtitle">Manage, track, and delete events</p>
 			</section>
 
 			<section className="events-controls">

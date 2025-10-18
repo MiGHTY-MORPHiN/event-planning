@@ -1,18 +1,9 @@
 import { useState, useEffect } from "react";
 import { isAfter, isBefore } from "date-fns";
-import {
-	Calendar,
-	User,
-	Users,
-	Briefcase,
-	X,
-	Camera,
-	Save,
-} from "lucide-react";
+import { Calendar, User, Users, Briefcase, X, Camera, Save } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import "./PlannerDashboard.css";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import BASE_URL from "../../apiConfig";
 
 function VendorCard({ vendor }) {
 	const getStatusColor = (status) => {
@@ -58,7 +49,7 @@ function VendorCard({ vendor }) {
 	);
 }
 
-export default function PlannerDashboard({ setActivePage, onSelectEvent }) {
+export default function PlannerDashboard( {setActivePage, onSelectEvent} ) {
 	const navigate = useNavigate();
 	const [isOpen, setIsOpen] = useState(true);
 	const [events, setEvents] = useState([]);
@@ -72,11 +63,11 @@ export default function PlannerDashboard({ setActivePage, onSelectEvent }) {
 		rejected: 0,
 	});
 	const [plannerProfile, setPlannerProfile] = useState(null);
-	const [showProfileModal, setShowProfileModal] = useState(false);
-	const [profileName, setProfileName] = useState("");
-	const [profilePicture, setProfilePicture] = useState(null);
-	const [profilePicturePreview, setProfilePicturePreview] = useState("");
-	const [isLoading, setIsLoading] = useState(false);
+  	const [showProfileModal, setShowProfileModal] = useState(false);
+  	const [profileName, setProfileName] = useState("");
+ 	const [profilePicture, setProfilePicture] = useState(null);
+  	const [profilePicturePreview, setProfilePicturePreview] = useState("");
+  	const [isLoading, setIsLoading] = useState(false);
 
 	const today = new Date();
 	today.setHours(0, 0, 0, 0);
@@ -108,43 +99,36 @@ export default function PlannerDashboard({ setActivePage, onSelectEvent }) {
 			}
 		};
 
-		return (
-			<section className="event-card">
-				<section className="event-header">
-					<h3>{event.name}</h3>
-					<section
-						className="event-status"
-						style={{
-							backgroundColor: getStatusColor(event.status),
-						}}
-					>
-						{event.status}
-					</section>
-				</section>
-				<section className="event-details">
-					<p className="event-date">{formatDate(event.date)}</p>
-					<p className="event-location">{event.location}</p>
-					<p className="event-attendees">
-						{event.guestList?.length ?? 0} guests
-					</p>
-					<p className="event-budget">
-						R{(event.budget ?? 0).toLocaleString()}
-					</p>
-				</section>
-				<section className="event-description">
-					<p>{event.description}</p>
-				</section>
-				<section className="event-buttons">
-					<button
-						className="select-btn"
-						onClick={() => onSelectEvent(event)}
-					>
-						Select Event
-					</button>
+	return (
+		<section className="event-card">
+			<section className="event-header">
+				<h3>{event.name}</h3>
+				<section
+					className="event-status"
+					style={{ backgroundColor: getStatusColor(event.status) }}
+				>
+					{event.status}
 				</section>
 			</section>
-		);
-	}
+			<section className="event-details">
+				<p className="event-date">{formatDate(event.date)}</p>
+				<p className="event-location">{event.location}</p>
+				<p className="event-attendees">
+					{(event.guestList?.length ?? 0)} guests
+				</p>
+				<p className="event-budget">R{(event.budget ?? 0).toLocaleString()}</p>
+			</section>
+			<section className="event-description">
+				<p>{event.description}</p>
+			</section>
+			<section className="event-buttons">
+				<button className="select-btn" onClick={() => onSelectEvent(event)}>
+					Select Event
+				</button>
+			</section>
+		</section>
+	);
+}
 
 	function toJSDate(date) {
 		if (!date) return null;
@@ -160,72 +144,79 @@ export default function PlannerDashboard({ setActivePage, onSelectEvent }) {
 	// Fetch planner profile
 	const fetchPlannerProfile = async (user) => {
 		if (!user) return;
-
+		
 		try {
-			const token = await user.getIdToken(true);
-			const res = await fetch(`${BASE_URL}/planner/profile`, {
-				headers: {
-					Authorization: `Bearer ${token}`,
-				},
-			});
-
-			if (res.ok) {
-				const data = await res.json();
-				setPlannerProfile(data);
-				setProfileName(data.name || "");
-				setProfilePicturePreview(data.profilePicture || "");
+		const token = await user.getIdToken(true);
+		const res = await fetch(
+			`https://us-central1-planit-sdp.cloudfunctions.net/api/planner/profile`,
+			{
+			headers: {
+				Authorization: `Bearer ${token}`,
+			},
 			}
+		);
+		
+		if (res.ok) {
+			const data = await res.json();
+			setPlannerProfile(data);
+			setProfileName(data.name || "");
+			setProfilePicturePreview(data.profilePicture || "");
+		}
 		} catch (error) {
-			console.error("Error fetching planner profile:", error);
+		console.error('Error fetching planner profile:', error);
 		}
 	};
 
 	// Update planner profile
 	const updatePlannerProfile = async () => {
 		if (!authUser) return;
-
+		
 		setIsLoading(true);
 		try {
-			const token = await authUser.getIdToken(true);
-			const formData = new FormData();
-			formData.append("name", profileName);
+		const token = await authUser.getIdToken(true);
+		const formData = new FormData();
+		formData.append('name', profileName);
+		
+		if (profilePicture) {
+			formData.append('profilePicture', profilePicture);
+		}
 
-			if (profilePicture) {
-				formData.append("profilePicture", profilePicture);
+		const res = await fetch(
+			`https://us-central1-planit-sdp.cloudfunctions.net/api/planner/profile`,
+			{
+			method: 'POST',
+			headers: {
+				Authorization: `Bearer ${token}`,
+			},
+			body: formData
 			}
+		);
 
-			const res = await fetch(`${BASE_URL}/planner/profile`, {
-				method: "POST",
-				headers: {
-					Authorization: `Bearer ${token}`,
-				},
-				body: formData,
-			});
-
-			if (res.ok) {
-				const data = await res.json();
-				setPlannerProfile(data.profile);
-				setProfilePicturePreview(data.profile.profilePicture || "");
-				setShowProfileModal(false);
-				setProfilePicture(null);
-			} else {
-				console.error("Failed to update profile");
-			}
+		if (res.ok) {
+			const data = await res.json();
+			setPlannerProfile(data.profile);
+			setProfilePicturePreview(data.profile.profilePicture || "");
+			setShowProfileModal(false);
+			setProfilePicture(null);
+		} else {
+			console.error('Failed to update profile');
+		}
 		} catch (error) {
-			console.error("Error updating planner profile:", error);
+		console.error('Error updating planner profile:', error);
 		} finally {
-			setIsLoading(false);
+		setIsLoading(false);
 		}
 	};
+
 
 	// Handle file selection for profile picture
 	const handleFileSelect = (event) => {
 		const file = event.target.files[0];
 		if (file) {
-			setProfilePicture(file);
-			// Create preview URL
-			const previewUrl = URL.createObjectURL(file);
-			setProfilePicturePreview(previewUrl);
+		setProfilePicture(file);
+		// Create preview URL
+		const previewUrl = URL.createObjectURL(file);
+		setProfilePicturePreview(previewUrl);
 		}
 	};
 
@@ -233,10 +224,10 @@ export default function PlannerDashboard({ setActivePage, onSelectEvent }) {
 	useEffect(() => {
 		const auth = getAuth();
 		const unsubscribe = onAuthStateChanged(auth, (user) => {
-			setAuthUser(user);
-			if (user) {
-				fetchPlannerProfile(user);
-			}
+		setAuthUser(user);
+		if (user) {
+			fetchPlannerProfile(user);
+		}
 		});
 		return () => unsubscribe();
 	}, []);
@@ -251,9 +242,10 @@ export default function PlannerDashboard({ setActivePage, onSelectEvent }) {
 		}
 		if (!user) return [];
 		const token = await user.getIdToken(true);
-		const res = await fetch(`${BASE_URL}/planner/me/events`, {
-			headers: { Authorization: `Bearer ${token}` },
-		});
+		const res = await fetch(
+			"https://us-central1-planit-sdp.cloudfunctions.net/api/planner/me/events",
+			{ headers: { Authorization: `Bearer ${token}` } }
+		);
 		if (!res.ok) return [];
 		const data = await res.json();
 		return data.events || [];
@@ -262,9 +254,10 @@ export default function PlannerDashboard({ setActivePage, onSelectEvent }) {
 	const fetchGuests = async (eventId) => {
 		try {
 			const token = await auth.currentUser.getIdToken(true);
-			const res = await fetch(`${BASE_URL}/planner/${eventId}/guests`, {
-				headers: { Authorization: `Bearer ${token}` },
-			});
+			const res = await fetch(
+				`https://us-central1-planit-sdp.cloudfunctions.net/api/planner/${eventId}/guests`,
+				{ headers: { Authorization: `Bearer ${token}` } }
+			);
 			if (!res.ok) return [];
 			const data = await res.json();
 			return data.guests || [];
@@ -276,9 +269,10 @@ export default function PlannerDashboard({ setActivePage, onSelectEvent }) {
 	const fetchVendors = async (eventId) => {
 		try {
 			const token = await auth.currentUser.getIdToken(true);
-			const res = await fetch(`${BASE_URL}/planner/${eventId}/vendors`, {
-				headers: { Authorization: `Bearer ${token}` },
-			});
+			const res = await fetch(
+				`https://us-central1-planit-sdp.cloudfunctions.net/api/planner/${eventId}/vendors`,
+				{ headers: { Authorization: `Bearer ${token}` } }
+			);
 			if (!res.ok) return [];
 			const data = await res.json();
 			return data.vendors || [];
@@ -344,11 +338,7 @@ export default function PlannerDashboard({ setActivePage, onSelectEvent }) {
 
 	const upcomingEvents = events.filter((e) => {
 		const eventDate = toJSDate(e.date);
-		return (
-			eventDate &&
-			isAfter(eventDate, today) &&
-			isBefore(eventDate, future)
-		);
+		return eventDate && isAfter(eventDate, today) && isBefore(eventDate, future);
 	});
 
 	const afterMonthEvent = events.filter((e) => {
@@ -357,8 +347,7 @@ export default function PlannerDashboard({ setActivePage, onSelectEvent }) {
 	});
 
 	useEffect(() => {
-		if (!Object.keys(vendorsByEvent).length || !upcomingEvents.length)
-			return;
+		if (!Object.keys(vendorsByEvent).length || !upcomingEvents.length) return;
 		const eventIds = upcomingEvents.map((e) => e.id);
 		setVendorStats(calculateVendorStatusCounts(vendorsByEvent, eventIds));
 	}, [vendorsByEvent, upcomingEvents]);
@@ -378,11 +367,7 @@ export default function PlannerDashboard({ setActivePage, onSelectEvent }) {
 
 	const prevEvents = events.filter((e) => {
 		const eventDate = toJSDate(e.date);
-		return (
-			eventDate &&
-			isAfter(eventDate, prevMonth) &&
-			isBefore(eventDate, today)
-		);
+		return eventDate && isAfter(eventDate, prevMonth) && isBefore(eventDate, today);
 	});
 
 	const prevAveGuestCount =
@@ -400,10 +385,7 @@ export default function PlannerDashboard({ setActivePage, onSelectEvent }) {
 			? aveGuestCount === 0
 				? 0
 				: 100
-			: Math.round(
-					((aveGuestCount - prevAveGuestCount) / prevAveGuestCount) *
-						100
-			  );
+			: Math.round(((aveGuestCount - prevAveGuestCount) / prevAveGuestCount) * 100);
 
 	if (!authUser) {
 		return (
@@ -420,107 +402,86 @@ export default function PlannerDashboard({ setActivePage, onSelectEvent }) {
 		<section data-testid="planner-dashboard " className="page-container">
 			{/* Profile Modal */}
 			{showProfileModal && (
-				<section
-					className="profile-modal-overlay"
-					onClick={() => setShowProfileModal(false)}
-				>
-					<section
-						className="profile-modal"
-						onClick={(e) => e.stopPropagation()}
-					>
-						<section className="profile-modal-header">
-							<h3>Update Your Profile</h3>
-							<button
-								onClick={() => setShowProfileModal(false)}
-								className="profile-modal-close"
-							>
-								<X className="ps-icon" />
-							</button>
-						</section>
-						<section className="profile-modal-content">
-							<section className="profile-picture-section">
-								<section className="profile-picture-preview">
-									{profilePicturePreview ? (
-										<img
-											src={profilePicturePreview}
-											alt="Profile preview"
-										/>
-									) : (
-										<User size={80} />
-									)}
-									<label
-										htmlFor="profile-picture-upload"
-										className="camera-icon"
-									>
-										<Camera size={20} />
-										<input
-											id="profile-picture-upload"
-											type="file"
-											accept="image/*"
-											onChange={handleFileSelect}
-											style={{ display: "none" }}
-										/>
-									</label>
-								</section>
-							</section>
-							<section className="profile-form-group">
-								<label>Your Name</label>
-								<input
-									type="text"
-									value={profileName}
-									onChange={(e) =>
-										setProfileName(e.target.value)
-									}
-									className="profile-input"
-									placeholder="Enter your name"
-								/>
-							</section>
-						</section>
-						<section className="profile-modal-footer">
-							<button
-								onClick={() => setShowProfileModal(false)}
-								className="ps-btn ps-btn-secondary"
-							>
-								Cancel
-							</button>
-							<button
-								onClick={updatePlannerProfile}
-								disabled={isLoading}
-								className="ps-btn ps-btn-primary"
-							>
-								<Save className="ps-icon" />
-								{isLoading ? "Saving..." : "Save Profile"}
-							</button>
+				<section className="profile-modal-overlay" onClick={() => setShowProfileModal(false)}>
+				<section className="profile-modal" onClick={(e) => e.stopPropagation()}>
+					<section className="profile-modal-header">
+					<h3>Update Your Profile</h3>
+					<button onClick={() => setShowProfileModal(false)} className="profile-modal-close">
+						<X className="ps-icon" />
+					</button>
+					</section>
+					<section className="profile-modal-content">
+					<section className="profile-picture-section">
+						<section className="profile-picture-preview">
+						{profilePicturePreview ? (
+							<img src={profilePicturePreview} alt="Profile preview" />
+						) : (
+							<User size={80} />
+						)}
+						<label htmlFor="profile-picture-upload" className="camera-icon">
+							<Camera size={20} />
+							<input
+							id="profile-picture-upload"
+							type="file"
+							accept="image/*"
+							onChange={handleFileSelect}
+							style={{ display: 'none' }}
+							/>
+						</label>
 						</section>
 					</section>
+					<section className="profile-form-group">
+						<label>Your Name</label>
+						<input
+						type="text"
+						value={profileName}
+						onChange={(e) => setProfileName(e.target.value)}
+						className="profile-input"
+						placeholder="Enter your name"
+						/>
+					</section>
+					</section>
+					<section className="profile-modal-footer">
+					<button onClick={() => setShowProfileModal(false)} className="ps-btn ps-btn-secondary">
+						Cancel
+					</button>
+					<button 
+						onClick={updatePlannerProfile} 
+						disabled={isLoading}
+						className="ps-btn ps-btn-primary"
+					>
+						<Save className="ps-icon" />
+						{isLoading ? 'Saving...' : 'Save Profile'}
+					</button>
+					</section>
+				</section>
 				</section>
 			)}
 
 			{/* Header Section with Profile */}
 			<section className="dashboard-intro">
 				<section>
-					<h1 className="dashboard-title">Planner Dashboard</h1>
-					<p className="dashboard-subtitle">
-						Welcome back, {plannerProfile?.name || "Planner"}!
-						Here's what's happening with your events.
-					</p>
+				<h1 className="dashboard-title">Planner Dashboard</h1>
+				<p className="dashboard-subtitle">
+					Welcome back, {plannerProfile?.name || 'Planner'}! Here's what's happening with your events.
+				</p>
 				</section>
 				<section className="profile-section">
-					<button
-						className="profile-button"
-						onClick={() => setShowProfileModal(true)}
-					>
-						{plannerProfile?.profilePicture ? (
-							<img
-								src={plannerProfile.profilePicture}
-								alt="Profile"
-								className="profile-image"
-							/>
-						) : (
-							<User size={24} />
-						)}
-						<span>{plannerProfile?.name || "Set Profile"}</span>
-					</button>
+				<button 
+					className="profile-button"
+					onClick={() => setShowProfileModal(true)}
+				>
+					{plannerProfile?.profilePicture ? (
+					<img 
+						src={plannerProfile.profilePicture} 
+						alt="Profile" 
+						className="profile-image"
+					/>
+					) : (
+					<User size={24} />
+					)}
+					<span>{plannerProfile?.name || 'Set Profile'}</span>
+				</button>
 				</section>
 			</section>
 
@@ -598,17 +559,11 @@ export default function PlannerDashboard({ setActivePage, onSelectEvent }) {
 					const vendors = vendorsByEvent[event.id] || [];
 					if (!vendors.length) return null;
 					return (
-						<section
-							key={event.id}
-							className="event-vendors-section"
-						>
+						<section key={event.id} className="event-vendors-section">
 							<h4 className="event-vendor-title">{event.name}</h4>
 							<section className="vendors-grid">
 								{vendors.map((vendor) => (
-									<VendorCard
-										key={vendor.id}
-										vendor={vendor}
-									/>
+									<VendorCard key={vendor.id} vendor={vendor} />
 								))}
 							</section>
 						</section>

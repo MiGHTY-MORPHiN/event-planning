@@ -1,5 +1,3 @@
-/* PlannerReviewVendor.css - Updated with Dark Mode Support */
-
 /* Review Vendor Modal Styles */
 .review-vendor-overlay {
   position: fixed;
@@ -7,7 +5,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -29,7 +27,6 @@
   overflow-y: auto;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   animation: slideUp 0.3s ease-out;
-  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 @keyframes slideUp {
@@ -43,28 +40,12 @@
   }
 }
 
-/* Dark mode modal */
-@media (prefers-color-scheme: dark) {
-  .review-vendor-modal {
-    background: #374151;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-  }
-}
-
 .review-modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 24px;
   border-bottom: 1px solid #e5e7eb;
-  transition: border-color 0.3s ease;
-}
-
-/* Dark mode header */
-@media (prefers-color-scheme: dark) {
-  .review-modal-header {
-    border-bottom-color: #4b5563;
-  }
 }
 
 .review-modal-header h2 {
@@ -72,14 +53,6 @@
   font-weight: 600;
   color: #1f2937;
   margin: 0;
-  transition: color 0.3s ease;
-}
-
-/* Dark mode header text */
-@media (prefers-color-scheme: dark) {
-  .review-modal-header h2 {
-    color: #f9fafb;
-  }
 }
 
 .review-close-btn {
@@ -99,20 +72,8 @@
 }
 
 .review-close-btn:hover {
-  background: #f3f4f6;
+  background-color: #f3f4f6;
   color: #1f2937;
-}
-
-/* Dark mode close button */
-@media (prefers-color-scheme: dark) {
-  .review-close-btn {
-    color: #9ca3af;
-  }
-  
-  .review-close-btn:hover {
-    background: #4b5563;
-    color: #f9fafb;
-  }
 }
 
 .review-modal-body {
@@ -122,16 +83,8 @@
 .vendor-review-info {
   margin-bottom: 24px;
   padding: 16px;
-  background: #f9fafb;
+  background-color: #f9fafb;
   border-radius: 8px;
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-/* Dark mode vendor info */
-@media (prefers-color-scheme: dark) {
-  .vendor-review-info {
-    background: #4b5563;
-  }
 }
 
 .vendor-review-info h3 {
@@ -139,25 +92,12 @@
   font-weight: 600;
   color: #1f2937;
   margin: 0 0 8px 0;
-  transition: color 0.3s ease;
 }
 
 .vendor-review-info .service-name {
   font-size: 14px;
   color: #6b7280;
   margin: 0;
-  transition: color 0.3s ease;
-}
-
-/* Dark mode vendor info text */
-@media (prefers-color-scheme: dark) {
-  .vendor-review-info h3 {
-    color: #f9fafb;
-  }
-  
-  .vendor-review-info .service-name {
-    color: #d1d5db;
-  }
 }
 
 .review-form {
@@ -176,14 +116,6 @@
   font-size: 16px;
   font-weight: 500;
   color: #374151;
-  transition: color 0.3s ease;
-}
-
-/* Dark mode rating label */
-@media (prefers-color-scheme: dark) {
-  .rating-section label {
-    color: #f9fafb;
-  }
 }
 
 .star-rating {
@@ -213,35 +145,18 @@
   color: #6b7280;
   margin: 0;
   min-height: 20px;
-  transition: color 0.3s ease;
-}
-
-/* Dark mode rating text */
-@media (prefers-color-scheme: dark) {
-  .rating-text {
-    color: #d1d5db;
-  }
 }
 
 .review-text-section {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding-right: 1rem ;
 }
 
 .review-text-section label {
   font-size: 16px;
   font-weight: 500;
   color: #374151;
-  transition: color 0.3s ease;
-}
-
-/* Dark mode review text label */
-@media (prefers-color-scheme: dark) {
-  .review-text-section label {
-    color: #f9fafb;
-  }
 }
 
 .review-text-section textarea {
@@ -252,9 +167,7 @@
   font-size: 14px;
   font-family: inherit;
   resize: vertical;
-  transition: all 0.2s;
-  background: white;
-  color: #1f2937;
+  transition: border-color 0.2s;
 }
 
 .review-text-section textarea:focus {
@@ -263,57 +176,21 @@
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
-/* Dark mode textarea */
-@media (prefers-color-scheme: dark) {
-  .review-text-section textarea {
-    background: #4b5563;
-    border-color: #6b7280;
-    color: #f9fafb;
-  }
-  
-  .review-text-section textarea:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
-  
-  .review-text-section textarea::placeholder {
-    color: #9ca3af;
-  }
-}
-
 .char-count {
   font-size: 12px;
   color: #9ca3af;
   text-align: right;
   margin: 0;
-  transition: color 0.3s ease;
-}
-
-/* Dark mode char count */
-@media (prefers-color-scheme: dark) {
-  .char-count {
-    color: #6b7280;
-  }
 }
 
 .review-error {
-  background: #fef2f2;
+  background-color: #fef2f2;
   border: 1px solid #fecaca;
   color: #dc2626;
   padding: 12px;
   border-radius: 8px;
   font-size: 14px;
   margin: 0;
-  transition: background-color 0.3s ease, border-color 0.3s ease;
-}
-
-/* Dark mode error */
-@media (prefers-color-scheme: dark) {
-  .review-error {
-    background: #7f1d1d;
-    border-color: #dc2626;
-    color: #fca5a5;
-  }
 }
 
 .review-actions {
@@ -335,48 +212,27 @@
 }
 
 .cancel-review-btn {
-  background: #f3f4f6;
+  background-color: #f3f4f6;
   color: #374151;
-  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .cancel-review-btn:hover:not(:disabled) {
-  background: #e5e7eb;
+  background-color: #e5e7eb;
 }
 
 .submit-review-btn {
-  background: #2563eb;
+  background-color: #2563eb;
   color: white;
 }
 
 .submit-review-btn:hover:not(:disabled) {
-  background: #1d4ed8;
+  background-color: #1d4ed8;
 }
 
 .submit-review-btn:disabled,
 .cancel-review-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-/* Dark mode buttons */
-@media (prefers-color-scheme: dark) {
-  .cancel-review-btn {
-    background: #4b5563;
-    color: #f9fafb;
-  }
-  
-  .cancel-review-btn:hover:not(:disabled) {
-    background: #6b7280;
-  }
-  
-  .submit-review-btn {
-    background: #3b82f6;
-  }
-  
-  .submit-review-btn:hover:not(:disabled) {
-    background: #2563eb;
-  }
 }
 
 /* Responsive Design */
