@@ -125,7 +125,6 @@ app.post('/vendor/apply', authenticate, async (req, res) => {
 });
 
 
-
 // Get the vendor profile
 app.get('/vendor/me', authenticate, async (req, res) => {
   try {
@@ -1014,28 +1013,68 @@ app.get('/planner/events/:eventId/bestvendors', authenticate, async (req, res) =
     // Fetch approved vendors
     const vendorSnap = await db.collection("Vendor")
       .where("status", "==", "approved")
+      .limit(100)
       .get();
 
     if (vendorSnap.empty) return res.status(200).json({ vendors: [] });
 
-    // Fetch vendor services for each vendor
-    const vendors = [];
-    for (const doc of vendorSnap.docs) {
-      const vendor = { id: doc.id, ...doc.data() };
+    // Batch process vendors to avoid memory issues
+    const batchSize = 25; // Process 25 vendors at a time
+    const vendorDocs = vendorSnap.docs;
+    const allVendors = [];
 
-      // Get services for this vendor
-      const servicesSnap = await db.collection("Vendor").doc(doc.id).collection("Services").get();
-      vendor.services = servicesSnap.docs.map(s => ({ id: s.id, ...s.data() }));
+    for (let i = 0; i < vendorDocs.length; i += batchSize) {
+      const batch = vendorDocs.slice(i, i + batchSize);
+      
+      // Fetch services for this batch of vendors in parallel
+      const batchPromises = batch.map(async (doc) => {
+        try {
+          const vendor = { id: doc.id, ...doc.data() };
 
-      // Score the vendor
-      vendor.score = scoreVendor(vendor, category);
-      vendors.push(vendor);
+          // Get services for this vendor with limit
+          const servicesSnap = await db.collection("Vendor")
+            .doc(doc.id)
+            .collection("Services")
+            .limit(50) // Limit services per vendor
+            .get();
+
+          vendor.services = servicesSnap.docs.map(s => ({ id: s.id, ...s.data() }));
+
+          // Score the vendor
+          vendor.score = scoreVendor(vendor, category);
+          
+          return vendor;
+        } catch (error) {
+          console.error(`Error processing vendor ${doc.id}:`, error);
+          return null; // Skip failed vendors
+        }
+      });
+
+      // Wait for batch to complete
+      const batchResults = await Promise.allSettled(batchPromises);
+      
+      // Add successful results to allVendors
+      batchResults.forEach(result => {
+        if (result.status === 'fulfilled' && result.value) {
+          allVendors.push(result.value);
+        }
+      });
+
+      // Small delay between batches to prevent overwhelming the database
+      if (i + batchSize < vendorDocs.length) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
     }
 
-    // Sort by score descending
-    const sortedVendors = vendors.sort((a, b) => b.score - a.score);
+    // Sort by score descending and limit final results
+    const sortedVendors = allVendors
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 50); // Return top 50 vendors max
 
-    res.status(200).json({ vendors: sortedVendors });
+    res.status(200).json({ 
+      vendors: sortedVendors,
+      totalVendors: sortedVendors.length
+    });
   } catch (err) {
     console.error("Error matching vendors:", err);
     res.status(500).json({ error: "Internal server error" });
@@ -1046,10 +1085,14 @@ app.get('/planner/events/:eventId/bestvendors', authenticate, async (req, res) =
 app.get('/planner/:plannerId/bestvendors', authenticate, async (req, res) => {
   try {
     const { plannerId } = req.params;
+        console.log(plannerId);
     if (!plannerId) return res.status(400).json({ error: "Missing plannerId" });
 
-    // Get all events created by this planner
-    const eventsSnap = await db.collection("Event").where("plannerId", "==", plannerId).get();
+    const eventsSnap = await db.collection("Event")
+      .where("plannerId", "==", plannerId)
+      .limit(50)
+      .get();
+
     const categories = new Set();
 
     eventsSnap.forEach(doc => {
@@ -1057,38 +1100,92 @@ app.get('/planner/:plannerId/bestvendors', authenticate, async (req, res) => {
       if (data.eventCategory) categories.add(data.eventCategory.toLowerCase());
     });
 
-    // Fetch approved vendors
+    console.log(categories);
+    console.log(eventsSnap.size);
+    console.log(plannerId);
+    if (categories.size === 0) {
+      return res.status(200).json({ vendors: [] });
+    }
+
     const vendorSnap = await db.collection("Vendor")
       .where("status", "==", "approved")
+      .limit(100)
       .get();
 
     if (vendorSnap.empty) return res.status(200).json({ vendors: [] });
 
-    const vendors = [];
-    for (const doc of vendorSnap.docs) {
-      const vendor = { id: doc.id, ...doc.data() };
+    // Batch process vendors
+    const batchSize = 25;
+    const vendorDocs = vendorSnap.docs;
+    const allVendors = [];
 
-      // Get services
-      const servicesSnap = await db.collection("Vendor").doc(doc.id).collection("Service").get();
-      vendor.services = servicesSnap.docs.map(s => ({ id: s.id, ...s.data() }));
+    for (let i = 0; i < vendorDocs.length; i += batchSize) {
+      const batch = vendorDocs.slice(i, i + batchSize);
+      
+      const batchPromises = batch.map(async (doc) => {
+        try {
+          const vendor = { id: doc.id, ...doc.data() };
 
-      // Score vendor based on multiple categories
-      let score = 0;
-      categories.forEach(cat => {
-        score += scoreVendor(vendor, cat);
+          // Get services with limit
+          const servicesSnap = await db.collection("Vendor")
+            .doc(doc.id)
+            .collection("Services")
+            .limit(50)
+            .get();
+
+          vendor.services = servicesSnap.docs.map(s => ({ id: s.id, ...s.data() }));
+
+          // Score vendor based on multiple categories
+          let score = 0;
+          let categoryCount = 0;
+          
+          categories.forEach(cat => {
+            const categoryScore = scoreVendor(vendor, cat);
+            if (categoryScore > 0) {
+              score += categoryScore;
+              categoryCount++;
+            }
+          });
+          
+          // Average score across relevant categories
+          vendor.score = categoryCount > 0 ? score / categoryCount : 0;
+
+          return vendor;
+        } catch (error) {
+          console.error(`Error processing vendor ${doc.id}:`, error);
+          return null;
+        }
       });
-      vendor.score = score;
 
-      vendors.push(vendor);
+      const batchResults = await Promise.allSettled(batchPromises);
+      
+      batchResults.forEach(result => {
+        if (result.status === 'fulfilled' && result.value) {
+          allVendors.push(result.value);
+        }
+      });
+
+      // Delay between batches
+      if (i + batchSize < vendorDocs.length) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
     }
 
-    const sorted = vendors.sort((a, b) => b.score - a.score);
-    res.status(200).json({ vendors: sorted });
+    // Sort and limit results
+    const sortedVendors = allVendors
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 50);
+
+    res.status(200).json({ 
+      vendors: sortedVendors,
+      totalVendors: sortedVendors.length
+    });
   } catch (err) {
     console.error("Error recommending vendors:", err);
     res.status(500).json({ error: "Internal Server error" });
   }
 });
+
 
 //Add a vendor to an event
 app.post('/planner/:eventId/vendors/:vendorId', authenticate, async (req, res) => {
@@ -2229,6 +2326,65 @@ app.post('/planner/contracts/:eventId/:contractId/:fieldId/signatures/upload',
     }
   }
 );
+
+//Amahle
+// Add this NEW endpoint after the planner signature upload endpoint
+app.post('/vendor/contracts/:eventId/:contractId/vendor-signature/upload',
+  authenticate,
+  busboyUploadToStorageMiddleware(undefined,
+     (req) => `Signatures/${req.params.eventId}/${req.params.contractId}/vendor_signature_${new Date().toISOString().replace(/[:.]/g, '-')}.png`),
+  async (req, res) => {
+    try {
+      const { eventId, contractId } = req.params;
+      const vendorId = req.uid;
+
+      if (!eventId || !contractId) {
+        return res.status(400).json({ message: 'Missing required fields' });
+      }
+      
+      // Check if file was uploaded
+      if (!req.uploads || Object.keys(req.uploads).length === 0) {
+        return res.status(400).json({ message: 'No signature file uploaded' });
+      }
+
+      // Get the uploaded file
+      const uploadedFile = Object.values(req.uploads)[0];
+      
+      // Generate permanent download URL
+      const token = uuidv4();
+      await uploadedFile.setMetadata({
+        metadata: {
+          firebaseStorageDownloadTokens: token,
+        },
+      });
+
+      const downloadURL = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(uploadedFile.name)}?alt=media&token=${token}`;
+
+      // Save vendor signature metadata to audit collection
+      await db.collection('SignatureAudit').add({
+        fieldId: 'vendor_signature',
+        signerId: vendorId,
+        signerRole: 'vendor',
+        contractId,
+        eventId,
+        signatureUrl: downloadURL,
+        signedAt: new Date().toISOString(),
+        ipAddress: req.ip || null,
+        userAgent: req.headers['user-agent'] || null,
+      });
+
+      res.json({ 
+        downloadURL,
+        message: 'Vendor signature uploaded successfully'
+      });
+    } catch (err) {
+      console.error('Error uploading vendor signature:', err);
+      res.status(500).json({ message: 'Server error', error: err.message });
+    }
+  }
+);
+
+
 
 // Save draft signatures
 app.post('/planner/contracts/:contractId/signatures/draft', authenticate, async (req, res) => {
