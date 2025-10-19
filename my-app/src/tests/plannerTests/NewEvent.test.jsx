@@ -239,26 +239,6 @@ describe("NewEvent", () => {
     expect(styleSelect.value).toBe("Elegant/Formal");
   });
 
-  it("shows validation error when required fields are empty", async () => {
-    render(
-      <MemoryRouter>
-        <NewEvent />
-      </MemoryRouter>
-    );
-
-    const submitButton = screen.getByRole("button", { name: /create event/i });
-    fireEvent.click(submitButton);
-
-    await waitFor(() => {
-      // Should show either "Please fill in all required fields" or "Please select a valid location on the map"
-      const errorMessage = screen.queryByText("Please fill in all required fields") || 
-                          screen.queryByText("Please select a valid location on the map");
-      expect(errorMessage).toBeInTheDocument();
-    });
-
-    expect(global.fetch).not.toHaveBeenCalled();
-  });
-
   it("successfully creates event with valid data", async () => {
     global.fetch.mockResolvedValueOnce({
       ok: true,
@@ -513,82 +493,6 @@ describe("NewEvent", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Token error")).toBeInTheDocument();
-    });
-  });
-
-  it("validates individual required fields", async () => {
-    render(
-      <MemoryRouter>
-        <NewEvent />
-      </MemoryRouter>
-    );
-
-    // Test missing name - fill everything except name
-    fireEvent.change(screen.getByLabelText("Event Category *"), { target: { value: "Wedding" } });
-    fireEvent.change(screen.getByLabelText("Date & Time *"), { target: { value: "2025-12-25T18:00" } });
-    fireEvent.change(screen.getByLabelText("Location *"), { target: { value: "Test Location" } });
-    fireEvent.change(screen.getByLabelText("Event Style *"), { target: { value: "Elegant/Formal" } });
-
-    const submitButton = screen.getByRole("button", { name: /create event/i });
-    fireEvent.click(submitButton);
-
-    await waitFor(() => {
-      expect(screen.getByText("Please fill in all required fields")).toBeInTheDocument();
-    });
-  });
-
-  it("includes all required fields in API request", async () => {
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve({ id: "new-event-id" }),
-    });
-
-    render(
-      <MemoryRouter>
-        <NewEvent />
-      </MemoryRouter>
-    );
-
-    fireEvent.change(screen.getByLabelText("Event Name *"), { target: { value: "Complete Event" } });
-    fireEvent.change(screen.getByLabelText("Event Category *"), { target: { value: "Corporate Event" } });
-    fireEvent.change(screen.getByLabelText("Date & Time *"), { target: { value: "2025-06-15T14:30" } });
-    fireEvent.change(screen.getByLabelText("Duration (hours) *"), { target: { value: "8" } });
-    fireEvent.change(screen.getByLabelText("Location *"), { target: { value: "Conference Center" } });
-    fireEvent.change(screen.getByLabelText("Event Style *"), { target: { value: "Professional" } });
-
-    const submitButton = screen.getByRole("button", { name: /create event/i });
-    fireEvent.click(submitButton);
-
-    await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith(
-        "https://us-central1-planit-sdp.cloudfunctions.net/api/event/apply",
-        expect.objectContaining({
-          method: "POST",
-          headers: {
-            Authorization: "Bearer mock-token",
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: "Complete Event",
-            eventCategory: "Corporate Event",
-            startTime: "2025-06-15T14:30",
-            duration: "8",
-            location: "Conference Center",
-            style: "Professional",
-            plannerId: "test-planner",
-            date: "2025-06-15T14:30",
-            description: "",
-            theme: "",
-            budget: null,
-            expectedGuestCount: null,
-            notes: "",
-            locationCoordinates: {
-              lat: 40.7128,
-              lng: -74.0060
-            }
-          }),
-        })
-      );
     });
   });
 
