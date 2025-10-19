@@ -2,13 +2,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import { fetchEvents, fetchVendors } from "../helpers";
 import { getAuth } from "firebase/auth";
-import { useFloorplanHandlers } from "./useFloorplanHandlers";
+import { useFloorplanHandlers } from "../hooks/useFloorplanHandlers";
 import { useFloorplanStorage } from "./useFloorplanStorage";
 import { uploadToVendor, exportToPNG } from "./floorplanImage";
 import { ITEM_PROTOTYPES } from "./floorplanItems";
 import { TEMPLATES } from "./floorplanTemplates";
 import FloorplanItem from "./FloorplanItem";
-import "./PlannerFloorPlan.css"; // updated CSS
+import "./PlannerFloorPlan.css";
 
 // Buttons for adding items
 const ItemButtons = ({ addItem }) => (
@@ -177,6 +177,7 @@ const PlannerFloorPlan = ({ eventId: initialEventId }) => {
     selectedId,
     setSelectedId,
     setIsDirty,
+    canvasSize, // ✅ pass canvasSize for proper bounds
   });
 
   const { handleImageUpload, clearBackgroundImage, saveLocal, loadLocal } =
@@ -241,7 +242,7 @@ const PlannerFloorPlan = ({ eventId: initialEventId }) => {
 
   return (
     <div className="floorplan-page">
-      {/* Topbar for event/vendor/template */}
+      {/* Topbar */}
       <div className="floorplan-topbar">
         <select value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
           <option value="">Select Event</option>
@@ -274,9 +275,9 @@ const PlannerFloorPlan = ({ eventId: initialEventId }) => {
         </select>
       </div>
 
-      {/* Main content: canvas + sidebar */}
+      {/* Main content */}
       <div className="floorplan-content">
-        {/* Canvas area */}
+        {/* Canvas */}
         <div className="floorplan-canvas-wrap">
           <div
             className="floorplan-canvas"
