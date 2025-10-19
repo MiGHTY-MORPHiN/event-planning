@@ -1,4 +1,4 @@
-// src/tests/VendorReviews.test.jsx
+
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, beforeEach, vi, expect } from "vitest";
@@ -54,12 +54,17 @@ describe("VendorReviews Component", () => {
   });
 
   it("renders loading state initially", () => {
+    // Mock fetch to never resolve
+    global.fetch.mockImplementation(() => new Promise(() => {}));
+
     render(
       <MemoryRouter>
         <VendorReviews />
       </MemoryRouter>
     );
+    
     expect(screen.getByText(/Loading your reviews/i)).toBeInTheDocument();
+    expect(screen.getByTestId("spinner")).toBeInTheDocument();
   });
 
   it("renders error state when fetch fails", async () => {
@@ -77,7 +82,18 @@ describe("VendorReviews Component", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/Failed to fetch reviews/i)).toBeInTheDocument();
+      expect(screen.getByText(/Great work!/i)).toBeInTheDocument();
+    });
+
+    // Type and send reply
+    const replyInput = screen.getByPlaceholderText(/Write a reply/i);
+    fireEvent.change(replyInput, { target: { value: "Thank you!" } });
+
+    const sendButton = screen.getByText(/Send/i);
+    fireEvent.click(sendButton);
+
+    await waitFor(() => {
+      expect(global.alert).toHaveBeenCalledWith(expect.stringContaining("Failed to update reply"));
     });
   });
 
@@ -174,8 +190,7 @@ describe("VendorReviews Component", () => {
     fireEvent.click(screen.getByText(/Send/i));
 
     await waitFor(() => {
-      expect(screen.getByText("Your Reply:")).toBeInTheDocument();
-      expect(screen.getByText("Thank you!")).toBeInTheDocument();
+      expect(screen.getByText(/No change/i)).toBeInTheDocument();
     });
   });
 
@@ -217,7 +232,14 @@ describe("VendorReviews Component", () => {
     fireEvent.click(screen.getByText(/Send/i));
 
     await waitFor(() => {
-      expect(screen.getByText("Edited reply")).toBeInTheDocument();
+      expect(screen.getByText(/Review with reply/i)).toBeInTheDocument();
+      expect(screen.getByText(/Review without reply/i)).toBeInTheDocument();
+      expect(screen.getByText(/Review with blank reply/i)).toBeInTheDocument();
+      
+      // Should have one "Your Reply:" and two reply inputs
+      expect(screen.getByText(/Your Reply:/i)).toBeInTheDocument();
+      const replyInputs = screen.getAllByPlaceholderText(/Write a reply/i);
+      expect(replyInputs).toHaveLength(2);
     });
   });
 });

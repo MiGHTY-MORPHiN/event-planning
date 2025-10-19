@@ -210,7 +210,7 @@ const PlannerSignatureView = ({ contract, onFinalize, onSaveDraft, onClose }) =>
     }
 
     const confirmSign = window.confirm(
-      '🎉 Are you sure you want to finalize and submit these signatures?\n\nThis will complete the contract signing process and cannot be undone.\n\nThe signed contract will be generated with all signature details attached.'
+      'Are you sure you want to finalize and submit these signatures?\n\nThis will complete the contract signing process and cannot be undone.\n\nThe signed contract will be generated with all signature details attached.'
     );
     if (!confirmSign) return;
 
@@ -290,7 +290,7 @@ const PlannerSignatureView = ({ contract, onFinalize, onSaveDraft, onClose }) =>
                 </button>
               )}
               <p className="canvas-hint-planner">
-                ✏️ Draw your signature above using your mouse or touchscreen
+                Draw your signature above using your mouse or touchscreen
               </p>
             </div>
           )}
@@ -313,7 +313,7 @@ const PlannerSignatureView = ({ contract, onFinalize, onSaveDraft, onClose }) =>
                 }}
               />
               <p className="canvas-hint-planner" style={{ borderLeftColor: fieldType.color }}>
-                ✍️ Type your initials (2-4 characters, will be converted to uppercase)
+                Type your initials (2-4 characters, will be converted to uppercase)
               </p>
             </div>
           )}
@@ -376,10 +376,10 @@ const PlannerSignatureView = ({ contract, onFinalize, onSaveDraft, onClose }) =>
         <div className="complete-icon-planner">
           <FileCheck size={64} color="#059669" />
         </div>
-        <h2>✅ Contract Signed Successfully!</h2>
+        <h2>Contract Signed Successfully!</h2>
         <p>This contract has been completed and signed.</p>
         <p className="signed-date-planner">
-          📅 Signed on: {contract.signedAt ? new Date(contract.signedAt).toLocaleDateString('en-US', {
+          Signed on: {contract.signedAt ? new Date(contract.signedAt).toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
             day: 'numeric'
@@ -404,7 +404,7 @@ const PlannerSignatureView = ({ contract, onFinalize, onSaveDraft, onClose }) =>
       {/* PDF Viewer Section */}
       <div className="pdf-viewer-section-planner">
         <div className="pdf-header-planner">
-          <h3>📄 Contract Document</h3>
+          <h3>Contract Document</h3>
           <p>Review the contract below, then scroll down to complete the signature fields</p>
         </div>
         
@@ -420,7 +420,7 @@ const PlannerSignatureView = ({ contract, onFinalize, onSaveDraft, onClose }) =>
       {/* Signature Fields Section */}
       <div className="signature-fields-section-planner">
         <div className="fields-header-planner">
-          <h3>✏️ Complete Signature Fields</h3>
+          <h3>Complete Signature Fields</h3>
           <p>The vendor has configured {clientFields.length} field{clientFields.length !== 1 ? 's' : ''} for you to complete</p>
           <p style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>
             Fields marked with <span style={{color: '#dc2626', fontWeight: 'bold'}}>*</span> are required
@@ -478,7 +478,7 @@ const PlannerSignatureView = ({ contract, onFinalize, onSaveDraft, onClose }) =>
 
             <div className="signing-notice-planner">
               <p>
-                <strong>⚖️ Legal Notice:</strong> By clicking "Finalize & Submit", you agree that this electronic signature
+                <strong>Legal Notice:</strong> By clicking "Finalize & Submit", you agree that this electronic signature
                 has the same legal effect as a handwritten signature. All signature details including timestamps, 
                 IP address, and field data will be permanently attached to the final contract PDF.
               </p>

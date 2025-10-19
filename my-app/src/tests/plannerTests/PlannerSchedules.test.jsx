@@ -152,7 +152,7 @@ const mockSchedules = [
   {
     id: "schedule2",
     scheduleTitle: "PDF Schedule",
-    pdfUrl: "https://example.com/schedule.pdf",
+    url: "https://example.com/schedule.pdf",
     type: "pdf",
   },
 ];
@@ -719,14 +719,12 @@ describe("PlannerSchedules", () => {
     fireEvent.click(screen.getByText("PDF Schedule"));
 
     await waitFor(() => {
-      expect(screen.getByText("View PDF")).toBeInTheDocument();
+      const pdfLink = screen.getByRole('link', { name: /Open PDF Schedule.*PDF Schedule/i });
+      expect(pdfLink).toBeInTheDocument();
+      fireEvent.click(pdfLink);
+      expect(pdfLink).toHaveAttribute("href", "https://example.com/schedule.pdf");
+      expect(pdfLink).toHaveAttribute("target", "_blank");
     });
-
-    fireEvent.click(screen.getByText("View PDF"));
-
-    expect(mockOpen).toHaveBeenCalledWith("https://example.com/schedule.pdf", "_blank");
-
-    mockOpen.mockRestore();
   });
 
   it("uploads PDF schedule", async () => {

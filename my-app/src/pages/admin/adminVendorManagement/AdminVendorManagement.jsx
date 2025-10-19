@@ -14,143 +14,179 @@ import {
 	CheckCircle,
 	XCircle,
 	Clock,
+	Briefcase,
+	Tag,
+	ThumbsUp,
+	ThumbsDown,
 } from "lucide-react";
 import Popup from "../../general/popup/Popup.jsx";
 import "./AdminVendorManagement.css";
 import AdminVendorApplications from "./AdminVendorApplications.jsx";
 import BASE_URL from "../../../apiConfig";
-import LoadingSpinner from "../../general/loadingspinner/LoadingSpinner.jsx";
+import LoadingSpinner from "../../general/loadingspinner/LoadingSpinner.jsx"; // Ensure correct path
 
 function AdminVendorManagement() {
 	const navigate = useNavigate();
+	// State for general vendor list
 	const [vendors, setVendors] = useState([]);
 	const [filteredVendors, setFilteredVendors] = useState([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState(null);
-
 	const [searchTerm, setSearchTerm] = useState("");
 	const [categoryFilter, setCategoryFilter] = useState("all");
-	const [statusFilter, setStatusFilter] = useState("all");
+	const [ratingFilter, setRatingFilter] = useState("all");
+
+	// State for Popup
 	const [isPopupOpen, setIsPopupOpen] = useState(false);
 	const [selectedVendor, setSelectedVendor] = useState(null);
-	const [vendorServices, setVendorServices] = useState([]);
-	const [vendorAnalytics, setVendorAnalytics] = useState(null);
-	const [vendorBookings, setVendorBookings] = useState([]);
+	const [selectedVendorDetails, setSelectedVendorDetails] = useState(null);
+	const [selectedVendorEvents, setSelectedVendorEvents] = useState([]);
+	const [selectedVendorServices, setSelectedVendorServices] = useState([]);
+	const [isLoadingDetails, setIsLoadingDetails] = useState(false);
 
 	const getToken = () =>
 		auth.currentUser
 			? auth.currentUser.getIdToken()
 			: Promise.reject("Not logged in");
 
-	// Fetch all vendors on component mount
+	// --- Fetch All Vendors (includes service count, rating) ---
+	const fetchVendors = async () => {
+		setIsLoading(true);
+		setError(null);
+		try {
+			const token = await getToken();
+			const response = await fetch(`${BASE_URL}/admin/vendors`, {
+				headers: { Authorization: `Bearer ${token}` },
+			});
+			if (!response.ok) {
+				throw new Error("Failed to fetch vendors.");
+			}
+			const data = await response.json();
+			setVendors(data);
+			setFilteredVendorsBasedOnFilter(
+				data,
+				searchTerm,
+				categoryFilter,
+				ratingFilter
+			);
+		} catch (err) {
+			setError(err.message);
+			console.error("Fetch vendors error:", err);
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
 	useEffect(() => {
-		const fetchVendors = async () => {
-			let user = auth.currentUser;
-			while (!user) {
-				await new Promise((res) => setTimeout(res, 50));
-				user = auth.currentUser;
-			}
-			try {
-				const token = await getToken();
-				const response = await fetch(`${BASE_URL}/admin/vendors`, {
-					headers: { Authorization: `Bearer ${token}` },
-				});
-				if (!response.ok) throw new Error("Failed to fetch vendors.");
-				const data = await response.json();
-				setVendors(data);
-				setFilteredVendors(data);
-			} catch (err) {
-				setError(err.message);
-			} finally {
-				setIsLoading(false);
-			}
-		};
 		fetchVendors();
 	}, []);
 
-	// Apply filters whenever vendors, searchTerm, or filters change
-	useEffect(() => {
-		let result = vendors;
-
-		if (searchTerm) {
+	// --- Helper to apply filters ---
+	const setFilteredVendorsBasedOnFilter = (
+		allVendors,
+		term,
+		category,
+		rating
+	) => {
+		let result = allVendors;
+		if (term) {
 			result = result.filter(
 				(v) =>
 					v.businessName
 						?.toLowerCase()
-						.includes(searchTerm.toLowerCase()) ||
-					v.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-					v.category?.toLowerCase().includes(searchTerm.toLowerCase())
+						.includes(term.toLowerCase()) ||
+					v.email?.toLowerCase().includes(term.toLowerCase()) ||
+					v.category?.toLowerCase().includes(term.toLowerCase())
 			);
 		}
-
-		if (categoryFilter !== "all") {
-			result = result.filter((v) => v.category === categoryFilter);
+		if (category !== "all") {
+			result = result.filter((v) => v.category === category);
 		}
-
-		if (statusFilter !== "all") {
-			result = result.filter((v) => v.status === statusFilter);
+		if (rating !== "all") {
+			const minRating = parseFloat(rating);
+			result = result.filter(
+				(v) => v.averageRating && v.averageRating >= minRating
+			);
 		}
-
 		setFilteredVendors(result);
-	}, [searchTerm, categoryFilter, statusFilter, vendors]);
+	};
 
-	// Fetch vendor details when selected
+	useEffect(() => {
+		setFilteredVendorsBasedOnFilter(
+			vendors,
+			searchTerm,
+			categoryFilter,
+			ratingFilter
+		);
+	}, [searchTerm, categoryFilter, ratingFilter, vendors]);
+
+	// --- Fetch Details for Popup (Analytics, Events, Services) ---
 	const fetchVendorDetails = async (vendorId) => {
+		setSelectedVendorDetails(null);
+		setSelectedVendorEvents([]);
+		setSelectedVendorServices([]);
 		try {
 			const token = await getToken();
-
-			// Fetch services
-			const servicesResponse = await fetch(
-				`${BASE_URL}/vendors/${vendorId}/services`,
-				{
-					headers: { Authorization: `Bearer ${token}` },
-				}
+			const analyticsPromise = fetch(
+				`${BASE_URL}/admin/vendor/${vendorId}`,
+				{ headers: { Authorization: `Bearer ${token}` } }
+			).then((res) =>
+				res.ok
+					? res.json()
+					: Promise.resolve({ reviews: [], averageRating: null })
 			);
-			if (servicesResponse.ok) {
-				const servicesData = await servicesResponse.json();
-				setVendorServices(servicesData);
-			}
-
-			// Fetch analytics
-			const analyticsResponse = await fetch(
-				`${BASE_URL}/analytics/${vendorId}`,
-				{
-					headers: { Authorization: `Bearer ${token}` },
-				}
+			const eventsPromise = fetch(
+				`${BASE_URL}/admin/vendor/${vendorId}/events`,
+				{ headers: { Authorization: `Bearer ${token}` } }
+			).then((res) =>
+				res.ok ? res.json() : Promise.resolve({ events: [] })
 			);
-			if (analyticsResponse.ok) {
-				const analyticsData = await analyticsResponse.json();
-				setVendorAnalytics(analyticsData);
-			}
-
-			// Fetch bookings
-			const bookingsResponse = await fetch(
-				`${BASE_URL}/vendor/bookings`,
-				{
-					headers: { Authorization: `Bearer ${token}` },
-				}
+			const servicesPromise = fetch(
+				`${BASE_URL}/admin/vendor/${vendorId}/services`,
+				{ headers: { Authorization: `Bearer ${token}` } }
+			).then((res) =>
+				res.ok ? res.json() : Promise.resolve({ services: [] })
 			);
-			if (bookingsResponse.ok) {
-				const bookingsData = await bookingsResponse.json();
-				// Filter bookings for this specific vendor
-				const vendorBookingsData =
-					bookingsData.bookings?.filter(
-						(booking) => booking.vendorId === vendorId
-					) || [];
-				setVendorBookings(vendorBookingsData);
-			}
+
+			const [analyticsData, eventsData, servicesData] = await Promise.all(
+				[analyticsPromise, eventsPromise, servicesPromise]
+			);
+
+			setSelectedVendorDetails(analyticsData);
+			setSelectedVendorEvents(eventsData.events || []);
+			setSelectedVendorServices(servicesData.services || []);
 		} catch (err) {
 			console.error("Error fetching vendor details:", err);
+			setError("Could not load vendor details.");
+			setSelectedVendorDetails({ reviews: [], averageRating: null });
+			setSelectedVendorEvents([]);
+			setSelectedVendorServices([]);
 		}
 	};
 
 	const handleViewDetails = async (vendor) => {
 		setSelectedVendor(vendor);
-		await fetchVendorDetails(vendor.id);
 		setIsPopupOpen(true);
+		setIsLoadingDetails(true);
+		try {
+			await fetchVendorDetails(vendor.id);
+		} catch (err) {
+			console.error("Popup data fetch failed:", err);
+		} finally {
+			setIsLoadingDetails(false);
+		}
 	};
 
-	const handleStatusUpdate = async (vendorId, newStatus) => {
+	const handleClosePopup = () => {
+		setIsPopupOpen(false);
+		setSelectedVendor(null);
+		setSelectedVendorDetails(null);
+		setSelectedVendorEvents([]);
+		setSelectedVendorServices([]);
+		setIsLoadingDetails(false);
+	};
+
+	const handleApplicationUpdate = async (vendorId, newStatus) => {
 		try {
 			const token = await getToken();
 			const response = await fetch(
@@ -164,69 +200,61 @@ function AdminVendorManagement() {
 					body: JSON.stringify({ status: newStatus }),
 				}
 			);
-
 			if (response.ok) {
-				// Update local state
 				setVendors((prev) =>
 					prev.map((v) =>
 						v.id === vendorId ? { ...v, status: newStatus } : v
 					)
 				);
 				setSelectedVendor((prev) =>
-					prev ? { ...prev, status: newStatus } : null
+					prev && prev.id === vendorId
+						? { ...prev, status: newStatus }
+						: prev
 				);
 				alert(`Vendor status updated to ${newStatus}`);
+				// Manually trigger a refresh of the applications component if needed
+				// This might involve passing a refresh function down or using a shared state/context
 			} else {
-				throw new Error("Failed to update status");
+				const errorData = await response.json();
+				throw new Error(errorData.message || "Failed to update status");
 			}
 		} catch (err) {
 			console.error("Error updating vendor status:", err);
-			alert("Error updating vendor status");
+			alert("Error updating vendor status: " + err.message);
 		}
+	};
+
+	const formatRating = (rating) => {
+		if (rating === null || rating === undefined || rating === 0)
+			return "N/A";
+		return rating.toFixed(1);
 	};
 
 	const formatDate = (dateString) => {
-		if (!dateString) return "Not set";
-		const date = new Date(dateString);
-		return date.toLocaleDateString("en-US", {
-			year: "numeric",
-			month: "short",
-			day: "numeric",
-		});
+		if (!dateString) return "Date not set";
+		try {
+			const date = dateString._seconds
+				? new Date(dateString._seconds * 1000)
+				: new Date(dateString);
+			if (isNaN(date)) return "Invalid Date";
+			return date.toLocaleDateString("en-US", {
+				year: "numeric",
+				month: "short",
+				day: "numeric",
+			});
+		} catch (e) {
+			return "Invalid Date";
+		}
 	};
 
 	const formatCurrency = (amount) => {
-		if (!amount) return "$0";
+		if (amount === null || amount === undefined) return "N/A";
 		return new Intl.NumberFormat("en-US", {
 			style: "currency",
 			currency: "USD",
+			minimumFractionDigits: 0,
+			maximumFractionDigits: 2,
 		}).format(amount);
-	};
-
-	const getStatusIcon = (status) => {
-		switch (status) {
-			case "approved":
-				return <CheckCircle size={16} />;
-			case "rejected":
-				return <XCircle size={16} />;
-			case "pending":
-				return <Clock size={16} />;
-			default:
-				return <Clock size={16} />;
-		}
-	};
-
-	const getStatusColor = (status) => {
-		switch (status) {
-			case "approved":
-				return "#10b981";
-			case "rejected":
-				return "#ef4444";
-			case "pending":
-				return "#f59e0b";
-			default:
-				return "#6b7280";
-		}
 	};
 
 	const uniqueCategories = [
@@ -234,19 +262,22 @@ function AdminVendorManagement() {
 		...new Set(vendors.map((v) => v.category).filter(Boolean)),
 	];
 
-	if (isLoading)
-		return (
-			<main className="admin-vendor-management-container">
-				<LoadingSpinner text="Loading vendors..." />
-			</main>
-		);
-
-	if (error)
-		return (
-			<main className="admin-vendor-management-container">
-				<h3>Error: {error}</h3>
-			</main>
-		);
+	const renderLoadingError = (loading, error, data, type) => {
+		if (loading) return <LoadingSpinner text={`Loading ${type}...`} />;
+		if (error)
+			return (
+				<p className="error-message">
+					Error loading {type}: {error}
+				</p>
+			);
+		if (!data || data.length === 0)
+			return (
+				<p className="admin-vendor-management-empty">
+					No {type} found.
+				</p>
+			);
+		return null;
+	};
 
 	return (
 		<section className="admin-vendor-management-container">
@@ -261,14 +292,13 @@ function AdminVendorManagement() {
 				<h2 className="admin-vendor-management-heading">
 					Pending Applications
 				</h2>
-				<AdminVendorApplications />
+				<AdminVendorApplications onApplicationUpdate={fetchVendors} />
 			</section>
 
 			<section className="admin-vendor-management-section">
 				<h2 className="admin-vendor-management-heading">
-					Vendor Directory ({filteredVendors.length})
+					All approved vendors ({filteredVendors.length})
 				</h2>
-
 				<section className="admin-vendor-management-filters">
 					<div className="admin-vendor-management-search">
 						<Search size={20} />
@@ -279,7 +309,6 @@ function AdminVendorManagement() {
 							onChange={(e) => setSearchTerm(e.target.value)}
 						/>
 					</div>
-
 					<select
 						className="admin-vendor-management-dropdown"
 						value={categoryFilter}
@@ -288,317 +317,425 @@ function AdminVendorManagement() {
 						<option value="all">All Categories</option>
 						{uniqueCategories
 							.filter((cat) => cat !== "all")
+							.sort()
 							.map((cat) => (
 								<option key={cat} value={cat}>
 									{cat}
 								</option>
 							))}
 					</select>
+					<select
+						className="admin-vendor-management-dropdown"
+						value={ratingFilter}
+						onChange={(e) => setRatingFilter(e.target.value)}
+					>
+						<option value="all">All Ratings</option>
+						<option value="4">4 Stars & Up</option>
+						<option value="3">3 Stars & Up</option>
+						<option value="2">2 Stars & Up</option>
+						<option value="1">1 Star & Up</option>
+					</select>
 				</section>
 
-				<section className="admin-vendor-management-grid">
-					{filteredVendors.length > 0 ? (
-						filteredVendors.map((vendor) => (
+				{renderLoadingError(
+					isLoading,
+					error,
+					filteredVendors,
+					"vendors"
+				)}
+				{filteredVendors && filteredVendors.length > 0 && (
+					<div className="admin-vendor-grid">
+						{filteredVendors.map((vendor) => (
 							<article
 								key={vendor.id}
-								className="admin-vendor-management-card"
+								className="admin-vendor-summary-card"
 							>
-								<figure className="admin-vendor-management-card-image">
-									<img
-										src={
-											vendor.profilePic ||
-											"/default-avatar.png"
-										}
-										alt={vendor.businessName}
-										onError={(e) => {
-											e.target.src =
-												"/default-avatar.png";
-										}}
-									/>
-								</figure>
-								<section className="admin-vendor-management-card-info">
-									<h4>
-										{vendor.businessName ||
-											"Unnamed Business"}
-									</h4>
-									<div
-										className="admin-vendor-management-status"
-										style={{
-											backgroundColor: getStatusColor(
-												vendor.status
-											),
-										}}
-									>
-										{getStatusIcon(vendor.status)}
+								<img
+									src={
+										vendor.profilePic ||
+										"/default-avatar.png"
+									}
+									alt={vendor.businessName || "Vendor"}
+									className="admin-vendor-profile-pic-card"
+									onError={(e) => {
+										e.target.src = "/default-avatar.png";
+									}}
+								/>
+								<h4>
+									{vendor.businessName || "Unnamed Vendor"}
+								</h4>
+								<p className="admin-vendor-category">
+									{vendor.category || "No Category"}
+								</p>
+								<div className="admin-vendor-stats">
+									<div className="admin-vendor-stat">
+										<Star size={16} />
 										<span>
-											{vendor.status || "pending"}
+											{formatRating(vendor.averageRating)}
 										</span>
 									</div>
-									<p className="admin-vendor-management-category">
-										{vendor.category || "Uncategorized"}
-									</p>
-									<div className="admin-vendor-management-card-stats">
-										<div className="admin-vendor-management-stat">
-											<Star size={14} />
-											<span>
-												{vendorAnalytics?.averageRating?.toFixed(
-													1
-												) || "N/A"}
-											</span>
-										</div>
-										<div className="admin-vendor-management-stat">
-											<Users size={14} />
-											<span>
-												{vendorAnalytics?.totalReviews ||
-													0}
-											</span>
-										</div>
+									<div className="admin-vendor-stat">
+										<Briefcase size={16} />
+										<span>
+											{vendor.serviceCount || 0} Services
+										</span>
 									</div>
-								</section>
+								</div>
 								<button
-									className="admin-vendor-management-view-btn"
 									onClick={() => handleViewDetails(vendor)}
+									className="admin-vendor-btn-view-details"
 								>
 									View Details
 								</button>
 							</article>
-						))
-					) : (
-						<p className="admin-vendor-management-empty">
-							No vendors found matching your criteria.
-						</p>
-					)}
-				</section>
+						))}
+					</div>
+				)}
 			</section>
 
-			<Popup isOpen={isPopupOpen} onClose={() => setIsPopupOpen(false)}>
+			<Popup isOpen={isPopupOpen} onClose={handleClosePopup}>
 				{selectedVendor && (
-					<section className="admin-vendor-management-popup">
-						<header className="admin-vendor-management-popup-header">
+					<div className="admin-vendor-modal-details">
+						<header className="admin-vendor-modal-header">
 							<img
 								src={
 									selectedVendor.profilePic ||
 									"/default-avatar.png"
 								}
 								alt={selectedVendor.businessName}
-								className="admin-vendor-management-popup-img"
+								className="admin-vendor-profile-pic-modal"
 								onError={(e) => {
 									e.target.src = "/default-avatar.png";
 								}}
 							/>
-							<h2>{selectedVendor.businessName}</h2>
-							<div className="admin-vendor-management-popup-meta">
-								<p className="admin-vendor-management-popup-category">
-									{selectedVendor.category}
-								</p>
-								<div
-									className="admin-vendor-management-popup-status"
-									style={{
-										backgroundColor: getStatusColor(
-											selectedVendor.status
-										),
-									}}
-								>
-									{getStatusIcon(selectedVendor.status)}
-									<span>{selectedVendor.status}</span>
+							<h2>
+								{selectedVendor.businessName ||
+									"Unnamed Vendor"}
+							</h2>
+							<p className="admin-vendor-category">
+								{selectedVendor.category}
+							</p>
+							{selectedVendor.status === "pending" && (
+								<div className="app-actions popup-actions">
+									<button
+										onClick={() =>
+											handleApplicationUpdate(
+												selectedVendor.id,
+												"approved"
+											)
+										}
+										className="btn-approve"
+										title="Approve"
+									>
+										<ThumbsUp size={18} /> Approve
+									</button>
+									<button
+										onClick={() =>
+											handleApplicationUpdate(
+												selectedVendor.id,
+												"rejected"
+											)
+										}
+										className="btn-reject"
+										title="Reject"
+									>
+										<ThumbsDown size={18} /> Reject
+									</button>
 								</div>
-							</div>
+							)}
 						</header>
 
-						<section className="admin-vendor-management-popup-body">
-							<p className="admin-vendor-management-description">
-								{selectedVendor.description ||
-									"No description provided."}
-							</p>
-
-							<section className="admin-vendor-management-contact">
-								<h4>Contact Information</h4>
-								<p>
-									<Mail size={16} />
-									<strong>Email:</strong>{" "}
-									{selectedVendor.email}
-								</p>
-								<p>
-									<Phone size={16} />
-									<strong>Phone:</strong>{" "}
-									{selectedVendor.phone || "Not provided"}
-								</p>
-								<p>
-									<MapPin size={16} />
-									<strong>Address:</strong>{" "}
-									{selectedVendor.address || "Not provided"}
-								</p>
-							</section>
-
-							{/* Analytics Section */}
-							{vendorAnalytics && (
-								<section className="admin-vendor-management-analytics">
-									<h4>Performance Analytics</h4>
-									<div className="admin-vendor-management-stats-grid">
-										<div className="admin-vendor-management-stat-card">
-											<Star size={20} />
-											<span className="admin-vendor-management-stat-value">
-												{vendorAnalytics.averageRating?.toFixed(
-													1
-												) || "N/A"}
-											</span>
-											<span className="admin-vendor-management-stat-label">
-												Average Rating
-											</span>
-										</div>
-										<div className="admin-vendor-management-stat-card">
-											<Users size={20} />
-											<span className="admin-vendor-management-stat-value">
-												{vendorAnalytics.totalReviews ||
-													0}
-											</span>
-											<span className="admin-vendor-management-stat-label">
-												Total Reviews
-											</span>
-										</div>
-										<div className="admin-vendor-management-stat-card">
-											<Calendar size={20} />
-											<span className="admin-vendor-management-stat-value">
-												{vendorBookings.length}
-											</span>
-											<span className="admin-vendor-management-stat-label">
-												Total Bookings
-											</span>
-										</div>
-									</div>
-								</section>
-							)}
-
-							{/* Services Section */}
-							{vendorServices.length > 0 && (
-								<section className="admin-vendor-management-services">
+						{isLoadingDetails ? (
+							<LoadingSpinner text="Loading vendor details..." />
+						) : (
+							<section className="admin-vendor-modal-body">
+								<div className="admin-vendor-contact-info">
+									<h4>Contact Information</h4>
+									<p>
+										<Mail size={14} />{" "}
+										<strong>Email:</strong>{" "}
+										{selectedVendor.email || "N/A"}
+									</p>
+									<p>
+										<Phone size={14} />{" "}
+										<strong>Phone:</strong>{" "}
+										{selectedVendor.phone || "N/A"}
+									</p>
+									<p>
+										<MapPin size={14} />{" "}
+										<strong>Address:</strong>{" "}
+										{selectedVendor.address || "N/A"}
+									</p>
+								</div>
+								<div className="admin-vendor-description">
+									<h4>Description</h4>
+									<p>
+										{selectedVendor.description ||
+											"No description provided."}
+									</p>
+								</div>
+								<div className="admin-vendor-services-offered">
 									<h4>
 										Services Offered (
-										{vendorServices.length})
+										{selectedVendorServices?.length ?? 0})
 									</h4>
-									<div className="admin-vendor-management-services-list">
-										{vendorServices.map((service) => (
-											<div
-												key={service.id}
-												className="admin-vendor-management-service-item"
-											>
-												<h5>{service.serviceName}</h5>
-												<div className="admin-vendor-management-service-pricing">
-													{service.cost > 0 && (
-														<span>
-															Base:{" "}
-															{formatCurrency(
-																service.cost
-															)}
+									{selectedVendorServices &&
+									selectedVendorServices.length > 0 ? (
+										<ul>
+											{selectedVendorServices.map(
+												(service) => (
+													<li key={service.id}>
+														<Tag
+															size={14}
+															className="service-icon"
+														/>
+														<span className="service-name">
+															{service.serviceName ||
+																"Unnamed Service"}
 														</span>
-													)}
-													{service.chargeByHour >
-														0 && (
-														<span>
-															Hourly:{" "}
-															{formatCurrency(
-																service.chargeByHour
+														<div className="service-pricing">
+															{service.cost >
+																0 && (
+																<span>
+																	<DollarSign
+																		size={
+																			12
+																		}
+																	/>
+																	{formatCurrency(
+																		service.cost
+																	)}{" "}
+																	(Fixed)
+																</span>
 															)}
-															/hr
-														</span>
-													)}
-													{service.chargePerPerson >
-														0 && (
-														<span>
-															Per Person:{" "}
-															{formatCurrency(
-																service.chargePerPerson
+															{service.chargeByHour >
+																0 && (
+																<span>
+																	<Clock
+																		size={
+																			12
+																		}
+																	/>
+																	{formatCurrency(
+																		service.chargeByHour
+																	)}
+																	/hr
+																</span>
 															)}
-														</span>
-													)}
-												</div>
-												{service.extraNotes && (
-													<p className="admin-vendor-management-service-notes">
-														{service.extraNotes}
-													</p>
-												)}
-											</div>
-										))}
-									</div>
-								</section>
-							)}
-
-							{/* Recent Bookings */}
-							{vendorBookings.length > 0 && (
-								<section className="admin-vendor-management-bookings">
+															{service.chargePerPerson >
+																0 && (
+																<span>
+																	<Users
+																		size={
+																			12
+																		}
+																	/>
+																	{formatCurrency(
+																		service.chargePerPerson
+																	)}
+																	/person
+																</span>
+															)}
+															{service.chargePerSquareMeter >
+																0 && (
+																<span>
+																	<MapPin
+																		size={
+																			12
+																		}
+																	/>
+																	{formatCurrency(
+																		service.chargePerSquareMeter
+																	)}
+																	/m²
+																</span>
+															)}
+														</div>
+														{service.extraNotes && (
+															<p className="service-notes">
+																Notes:{" "}
+																{
+																	service.extraNotes
+																}
+															</p>
+														)}
+													</li>
+												)
+											)}
+										</ul>
+									) : (
+										<p>No specific services listed.</p>
+									)}
+								</div>
+								<div className="admin-vendor-events-worked-on">
 									<h4>
-										Recent Bookings ({vendorBookings.length}
-										)
+										Events Worked On (
+										{selectedVendorEvents?.length ?? 0})
 									</h4>
-									<div className="admin-vendor-management-bookings-list">
-										{vendorBookings
-											.slice(0, 5)
-											.map((booking, index) => (
-												<div
-													key={index}
-													className="admin-vendor-management-booking-item"
-												>
-													<h5>{booking.eventName}</h5>
-													<div className="admin-vendor-management-booking-details">
+									{selectedVendorEvents &&
+									selectedVendorEvents.length > 0 ? (
+										<ul>
+											{selectedVendorEvents.map(
+												(event) => (
+													<li key={event.id}>
+														<Calendar size={14} />
 														<span>
+															{event.name} (
 															{formatDate(
-																booking.date
+																event.date
 															)}
+															)
 														</span>
-														<span>
-															{booking.location}
+														<span
+															className={`event-status-${
+																event.status ||
+																"unknown"
+															}`}
+														>
+															{event.status ||
+																"unknown"}
 														</span>
-														<span>
-															{
-																booking.expectedGuestCount
-															}{" "}
-															guests
-														</span>
-													</div>
-												</div>
-											))}
-									</div>
-								</section>
-							)}
-						</section>
-
-						<footer className="admin-vendor-management-popup-footer">
-							<div className="admin-vendor-management-actions">
-								{selectedVendor.status === "pending" && (
-									<>
-										<button
-											className="admin-vendor-management-action-btn admin-vendor-management-approve"
-											onClick={() =>
-												handleStatusUpdate(
-													selectedVendor.id,
-													"approved"
+													</li>
 												)
-											}
-										>
-											<CheckCircle size={16} />
-											Approve Vendor
-										</button>
-										<button
-											className="admin-vendor-management-action-btn admin-vendor-management-reject"
-											onClick={() =>
-												handleStatusUpdate(
-													selectedVendor.id,
-													"rejected"
+											)}
+										</ul>
+									) : (
+										<p>No event history found.</p>
+									)}
+								</div>
+								<div className="admin-vendor-reviews">
+									<h4>
+										Reviews (
+										{selectedVendorDetails?.reviews
+											?.length ?? 0}
+										) - Avg:{" "}
+										{formatRating(
+											selectedVendorDetails?.averageRating
+										)}
+									</h4>
+									{selectedVendorDetails?.reviews &&
+									selectedVendorDetails.reviews.length > 0 ? (
+										<ul>
+											{selectedVendorDetails.reviews.map(
+												(review) => (
+													<li
+														key={review.id}
+														className="review-item-improved"
+													>
+														{" "}
+														{/* Added a class */}
+														<div className="review-meta">
+															{" "}
+															{/* Grouped meta info */}
+															<div className="review-rating">
+																{[
+																	...Array(5),
+																].map(
+																	(_, i) => (
+																		<Star
+																			key={
+																				i
+																			}
+																			size={
+																				14
+																			}
+																			color={
+																				i <
+																				review.rating
+																					? "#ffc107"
+																					: "#e0e0e0"
+																			}
+																			fill={
+																				i <
+																				review.rating
+																					? "#ffc107"
+																					: "none"
+																			}
+																		/>
+																	)
+																)}
+															</div>
+															<p className="review-date">
+																Reviewed on:{" "}
+																{formatDate(
+																	review.createdAt ||
+																		review.timeOfReview
+																)}
+															</p>
+														</div>
+														<div className="review-context-improved">
+															{" "}
+															{/* Renamed and improved context */}
+															{review.eventName &&
+																![
+																	"Event Not Found",
+																	"Event Not Specified",
+																].includes(
+																	review.eventName
+																) && (
+																	<p className="review-event">
+																		<Briefcase
+																			size={
+																				12
+																			}
+																		/>{" "}
+																		<strong>
+																			Event:
+																		</strong>{" "}
+																		{
+																			review.eventName
+																		}
+																	</p>
+																)}
+															{review.plannerName &&
+																![
+																	"Planner Not Found",
+																	"Planner Not Specified",
+																].includes(
+																	review.plannerName
+																) && (
+																	<p className="review-planner">
+																		<Users
+																			size={
+																				12
+																			}
+																		/>{" "}
+																		<strong>
+																			By:
+																		</strong>{" "}
+																		{
+																			review.plannerName
+																		}
+																	</p>
+																)}
+														</div>
+														<p className="review-text">
+															"
+															{review.review ||
+																review.comment}
+															"
+														</p>{" "}
+														{/* Added quotes */}
+														{review.reply && (
+															<p className="review-reply">
+																<strong>
+																	Vendor's
+																	Reply:
+																</strong>{" "}
+																{review.reply}
+															</p>
+														)}
+													</li>
 												)
-											}
-										>
-											<XCircle size={16} />
-											Reject Vendor
-										</button>
-									</>
-								)}
-								<button className="admin-vendor-management-edit-btn">
-									<Edit size={16} />
-									Edit Vendor
-								</button>
-							</div>
-						</footer>
-					</section>
+											)}
+										</ul>
+									) : (
+										<p>No reviews available yet.</p>
+									)}
+								</div>
+							</section>
+						)}
+					</div>
 				)}
 			</Popup>
 		</section>
