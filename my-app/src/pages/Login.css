@@ -7,9 +7,25 @@
   --field: #f8fafc;
 }
 
-
-.background{
-  background: white;
+/* 🌸 Soft event-themed background */
+.background {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.95),
+      rgba(240, 245, 255, 0.95),
+      rgba(230, 230, 255, 0.9)
+    ),
+    url("https://images.unsplash.com/photo-1559589689-577aabd1db4a?auto=format&fit=crop&w=2000&q=80");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  backdrop-filter: blur(6px);
 }
 
 /* Centered card container */
@@ -21,7 +37,6 @@
   box-sizing: border-box; 
   background: white;
   height:100vh;
- 
 }
 
 /* Sparkly card inside gradient background */
@@ -30,7 +45,7 @@
   border-radius: 20px;
   padding: 2rem;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
-  width: 100%; /* ✅ fit inside container */
+  width: 100%;
   box-sizing: border-box;
   margin-top:60px;
 }
@@ -76,6 +91,7 @@
 .divider span {
   padding: 0 0.5rem;
 }
+
 .reset {
   color: #4ce53e;
   font-size: 0.9rem;
@@ -152,7 +168,7 @@
   border: none;
   outline: none;
   background: var(--field);
-  box-sizing: border-box; /* ✅ stays inside card */
+  box-sizing: border-box; 
 }
 
 .input-icon {
@@ -186,8 +202,6 @@
 }
 
 /* --- RESPONSIVE BREAKPOINTS --- */
-
-/* Small devices (phones) */
 @media (max-width: 480px) {
   .login-page {
     padding: 0.5rem;
@@ -208,7 +222,6 @@
   }
 }
 
-/* Extra small devices (very small phones < 360px) */
 @media (max-width: 360px) {
   .login-card {
     padding: 1rem;
@@ -224,4 +237,9 @@
   }
 }
 
-
+/* Shake animation */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
