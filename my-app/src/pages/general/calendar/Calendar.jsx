@@ -3,7 +3,7 @@ import MonthView from "./MonthView";
 import WeekView from "./WeekView";
 import DayView from "./DayView";
 import ScheduleView from "./ScheduleView";
-import { getMonthName } from "./dateUtils";
+import { getMonthName } from "./dateUtils.js";
 import "./Calendar.css";
 
 export default function Calendar({ events, onEventClick, onDateClick }) {

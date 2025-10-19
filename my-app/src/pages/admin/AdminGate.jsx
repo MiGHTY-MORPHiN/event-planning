@@ -14,7 +14,6 @@ export default function AdminGate() {
 				const unsubscribe = auth.onAuthStateChanged((user) => {
 					resolve(user);
 					unsubscribe();
-					
 				});
 			});
 
@@ -36,7 +35,7 @@ export default function AdminGate() {
 
 				if (res.status === 404) {
 					// If profile is not found, redirect to the create profile page
-					navigate("/admin-create-profile");
+					return <p>You unfortunately do not have admin status</p>;
 				} else if (res.ok) {
 					// If profile exists, redirect to the main admin dashboard/home
 					navigate("/admin/home");

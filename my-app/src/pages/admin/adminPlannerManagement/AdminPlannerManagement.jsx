@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import Popup from "../../general/popup/Popup.jsx";
 import "./AdminPlannerManagement.css";
-import BASE_URL from "../../../apiConfig";
+import BASE_URL from "../../../apiConfig.js";
 import LoadingSpinner from "../../general/loadingspinner/LoadingSpinner.jsx";
 
 export default function PlannerManagement() {

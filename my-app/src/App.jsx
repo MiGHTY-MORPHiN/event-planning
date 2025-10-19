@@ -31,7 +31,6 @@ import AdminEventManagement from "./pages/admin/adminEventManagement/AdminEventM
 import AdminVendorManagement from "./pages/admin/adminVendorManagement/AdminVendorManagement.jsx";
 import AdminReports from "./pages/admin/adminReportsAndAnalytics/AdminReports.jsx";
 import AdminVendorApplications from "./pages/admin/adminVendorManagement/AdminVendorApplications.jsx";
-import AdminCreateProfile from "./pages/admin/adminProfile/AdminCreateProfile.jsx";
 import AdminProfile from "./pages/admin/adminProfile/AdminProfile.jsx";
 
 function App() {
@@ -99,10 +98,6 @@ function App() {
 				{/*Admin Routes*/}
 				<Route path="/admin" element={<AdminGate />} />
 				<Route path="/admin/*" element={<Admin />} />
-				<Route
-					path="/admin-create-profile"
-					element={<AdminCreateProfile />}
-				/>
 				<Route path="/admin/my-profile" element={<AdminProfile />} />
 				<Route
 					path="/admin/planner-management"

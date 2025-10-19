@@ -13,7 +13,7 @@ import {
 	Tooltip,
 	ResponsiveContainer,
 } from "recharts";
-import { formatCurrency } from "./formatters";
+import { formatCurrency } from "./formatters.js";
 
 const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042", "#0088fe"];
 

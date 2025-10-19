@@ -4,7 +4,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { Edit, Mail, Phone, Save, Upload } from "lucide-react";
 import "./AdminProfile.css";
 import BASE_URL from "../../../apiConfig";
-import LoadingSpinner from "../../general/loadingspinner/LoadingSpinner";
+import LoadingSpinner from "../../general/loadingspinner/LoadingSpinner.jsx";
 
 // --- View Component ---
 const AdminProfileView = ({ admin, onEditClick, imageVersion }) => (
