@@ -1,30 +1,12 @@
-import React, {
-	useEffect,
-	useState,
-	useMemo,
-	useCallback,
-	useRef,
-} from "react";
-import {
-	Calendar,
-	User,
-	FileText,
-	Search,
-	X,
-	Edit3,
-	Download,
-	Trash2,
-	Clock,
-	CheckCircle,
-	AlertCircle,
-} from "lucide-react";
+import { useEffect, useState, useMemo, useCallback } from "react";
+import { Calendar, FileText, X, Search } from "lucide-react";
 import { auth } from "../../firebase";
 import "./PlannerContract.css";
 import Popup from "../general/popup/Popup.jsx";
 import PlannerSignatureView from "./PlannerSignatureView";
-import { createSignatureDetailsDocument, getUserIPAddress } from "./PlannerSigAttch.js";
-
-const API_BASE = "https://us-central1-planit-sdp.cloudfunctions.net/api";
+import { createSignatureDetailsDocument, getUserIPAddress} from "./PlannerSigAttch.js";
+import BASE_URL from "../../apiConfig";
+import EventCard from "./ContractComponents/EventCardContract.jsx";
 
 const useDebounce = (value, delay) => {
 	const [debouncedValue, setDebouncedValue] = useState(value);
@@ -47,25 +29,6 @@ const PlannerContract = () => {
 	const [saveStatus, setSaveStatus] = useState("");
 	const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-	function formatDate(date) {
-		if (!date) return "";
-
-		if(typeof date === 'object' && typeof date._seconds === 'number' && typeof date._nanoseconds === 'number') {
-			const jsDate = new Date( date._seconds * 1000 + date._nanoseconds / 1e6);
-			return jsDate.toLocaleString();
-		}
-
-		if (date instanceof Date) {
-			return date.toLocaleString();
-		}
-
-		if (typeof date === "string") {
-			return new Date(date).toLocaleString();
-		}
-
-		return String(date);
-	}
-
 	const getAuthToken = async () => {
 		if (!auth.currentUser) {
 			throw new Error("User not authenticated");
@@ -82,12 +45,14 @@ const PlannerContract = () => {
 
 		try {
 			const token = await getAuthToken();
-			const response = await fetch(`${API_BASE}/planner/contracts`, {
+			const response = await fetch(`${BASE_URL}/planner/contracts`, {
 				headers: { Authorization: `Bearer ${token}` },
 			});
 
 			if (!response.ok) {
-				throw new Error(`Failed to fetch contracts: ${response.status}`);
+				throw new Error(
+					`Failed to fetch contracts: ${response.status}`
+				);
 			}
 
 			const data = await response.json();
@@ -115,13 +80,18 @@ const PlannerContract = () => {
 
 	const dataURLtoBlob = (dataURL) => {
 		try {
+			// Handle case where dataURL might already be a blob or URL
 			if (!dataURL || typeof dataURL !== 'string') {
 				throw new Error('Invalid data URL');
 			}
 
-			const arr = dataURL.split(',');
+			const arr = dataURL.split(",");
+			
+			// Extract MIME type from the data URL
 			const mimeMatch = arr[0].match(/:(.*?);/);
 			const mime = mimeMatch ? mimeMatch[1] : 'image/png';
+			
+			// Handle both standard data URLs and base64 data
 			const bstr = atob(arr[1]);
 			let n = bstr.length;
 			const u8arr = new Uint8Array(n);
@@ -139,14 +109,17 @@ const PlannerContract = () => {
 		try {
 			const token = await getAuthToken();
 			
+			// Debug: Log what we're receiving
 			console.log('Uploading signature for fieldId:', fieldId);
 			console.log('Data URL type:', typeof dataURL);
 			console.log('Data URL preview:', dataURL ? dataURL.substring(0, 100) : 'null');
 			
+			// Validate data URL before converting
 			if (!dataURL || typeof dataURL !== 'string') {
 				throw new Error('Invalid signature data format: data is not a string');
 			}
 
+			// Check if it's a proper data URL
 			if (!dataURL.includes('data:image')) {
 				console.error('Invalid data URL format. Expected data:image/..., got:', dataURL.substring(0, 50));
 				throw new Error('Invalid signature data format: not a proper image data URL');
@@ -161,12 +134,12 @@ const PlannerContract = () => {
 			console.log('Blob created successfully, size:', blob.size);
 
 			const formData = new FormData();
-			formData.append('signature', blob, `${fieldId}.png`);
+			formData.append("signature", blob, `${fieldId}.png`);
 
 			const response = await fetch(
-				`${API_BASE}/planner/contracts/${eventId}/${contractId}/${fieldId}/signatures/upload`,
+				`${BASE_URL}/planner/contracts/${eventId}/${contractId}/${fieldId}/signatures/upload`,
 				{
-					method: 'POST',
+					method: "POST",
 					headers: { Authorization: `Bearer ${token}` },
 					body: formData,
 				}
@@ -185,88 +158,98 @@ const PlannerContract = () => {
 				metadata: {
 					fieldId,
 					signerId: auth.currentUser.uid,
-					signerRole: 'client',
+					signerRole: "client",
 					contractId,
 					eventId,
 					signatureUrl: data.downloadURL,
 					signedAt: new Date().toISOString(),
 					userAgent: navigator.userAgent,
-				}
+				},
 			};
 		} catch (error) {
-			console.error('Error uploading signature:', error);
+			console.error("Error uploading signature:", error);
 			throw error;
 		}
 	};
 
-	const saveDraftSignature = useCallback(async (signatureDataParam) => {
-		if (!selectedContract || Object.keys(signatureDataParam).length === 0) {
-			setSaveStatus("No signatures to save");
-			return;
-		}
-
-		setIsSaving(true);
-		setSaveStatus("Saving draft...");
-
-		try {
-			const draftSignatures = {};
-
-			for (const [fieldId, dataURL] of Object.entries(signatureDataParam)) {
-				const savedSignature = await uploadSignature(
-					fieldId,
-					dataURL,
-					selectedContract.id,
-					selectedContract.eventId
-				);
-				draftSignatures[fieldId] = savedSignature;
+	const saveDraftSignature = useCallback(
+		async (signatureDataParam) => {
+			if (
+				!selectedContract ||
+				Object.keys(signatureDataParam).length === 0
+			) {
+				setSaveStatus("No signatures to save");
+				return;
 			}
 
-			const token = await getAuthToken();
-			const response = await fetch(
-				`${API_BASE}/planner/contracts/${selectedContract.id}/signatures/draft`,
-				{
-					method: 'POST',
-					headers: {
-						Authorization: `Bearer ${token}`,
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify({
-						eventId: selectedContract.eventId,
-						vendorId: selectedContract.vendorId,
-						signatures: draftSignatures,
-					}),
+			setIsSaving(true);
+			setSaveStatus("Saving draft...");
+
+			try {
+				const draftSignatures = {};
+
+				for (const [fieldId, dataURL] of Object.entries(
+					signatureDataParam
+				)) {
+					const savedSignature = await uploadSignature(
+						fieldId,
+						dataURL,
+						selectedContract.id,
+						selectedContract.eventId
+					);
+					draftSignatures[fieldId] = savedSignature;
 				}
-			);
 
-			if (!response.ok) {
-				throw new Error(`Failed to save draft: ${response.status}`);
+				const token = await getAuthToken();
+				const response = await fetch(
+					`${BASE_URL}/planner/contracts/${selectedContract.id}/signatures/draft`,
+					{
+						method: "POST",
+						headers: {
+							Authorization: `Bearer ${token}`,
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({
+							eventId: selectedContract.eventId,
+							vendorId: selectedContract.vendorId,
+							signatures: draftSignatures,
+						}),
+					}
+				);
+
+				if (!response.ok) {
+					throw new Error(`Failed to save draft: ${response.status}`);
+				}
+
+				const result = await response.json();
+
+				setContracts((prev) =>
+					prev.map((c) =>
+						c.id === selectedContract.id
+							? {
+									...c,
+									signatureFields: result.signatureFields,
+									draftSignatures,
+									lastedited: {
+										seconds: Math.floor(Date.now() / 1000),
+									},
+							  }
+							: c
+					)
+				);
+
+				setSaveStatus("Draft saved successfully!");
+				setTimeout(() => setSaveStatus(""), 3000);
+			} catch (error) {
+				console.error("Error saving draft signature:", error);
+				setSaveStatus(`Failed to save draft: ${error.message}`);
+				setTimeout(() => setSaveStatus(""), 3000);
+			} finally {
+				setIsSaving(false);
 			}
-
-			const result = await response.json();
-
-			setContracts((prev) =>
-				prev.map((c) =>
-					c.id === selectedContract.id
-						? {
-								...c,
-								signatureFields: result.signatureFields,
-								draftSignatures,
-								lastedited: { seconds: Math.floor(Date.now() / 1000) },
-						  }
-						: c
-				)
-			);
-
-			setSaveStatus("Draft saved successfully!");
-			setTimeout(() => setSaveStatus(""), 3000);
-		} catch (error) {
-			console.error("Error saving draft signature:", error);
-			setSaveStatus(`Failed to save draft: ${error.message}`);
-			setTimeout(() => setSaveStatus(""), 3000);
-		} finally {
-			setIsSaving(false);
-		}
-	}, [selectedContract]);
+		},
+		[selectedContract]
+	);
 
 	const sendSignedContract = async (signatureDataParam) => {
 		if (!selectedContract) return;
@@ -294,9 +277,12 @@ const PlannerContract = () => {
 		try {
 			const finalSignatures = {};
 
+			// Upload all signatures - handle both canvas data URLs and text fields
 			for (const [fieldId, data] of Object.entries(signatureDataParam)) {
+				// Find the field to check its type
 				const field = selectedContract.signatureFields.find(f => f.id === fieldId);
 				
+				// Only upload canvas signatures (signature and initial types with image data)
 				if (field && field.type === 'signature' && data && typeof data === 'string' && data.includes('data:image')) {
 					const savedSignature = await uploadSignature(
 						fieldId,
@@ -306,8 +292,9 @@ const PlannerContract = () => {
 					);
 					finalSignatures[fieldId] = savedSignature;
 				} else {
+					// For non-canvas fields (text, date, checkbox, initials as text), just store the data
 					finalSignatures[fieldId] = {
-						url: data,
+						url: data, // Store the text/checkbox value directly
 						metadata: {
 							fieldId,
 							signerId: auth.currentUser.uid,
@@ -321,24 +308,26 @@ const PlannerContract = () => {
 				}
 			}
 
+			// Get IP address for audit trail
 			const ipAddress = await getUserIPAddress();
-			
+
 			const signerInfo = {
 				ipAddress: ipAddress,
 				userAgent: navigator.userAgent,
 				signedAt: new Date().toISOString(),
 				signerName: selectedContract.clientName,
-				signerEmail: selectedContract.clientEmail
+				signerEmail: selectedContract.clientEmail,
 			};
 
+			// Finalize the contract
 			const token = await getAuthToken();
 			const response = await fetch(
-				`${API_BASE}/planner/contracts/${selectedContract.id}/finalize`,
+				`${BASE_URL}/planner/contracts/${selectedContract.id}/finalize`,
 				{
-					method: 'POST',
+					method: "POST",
 					headers: {
 						Authorization: `Bearer ${token}`,
-						'Content-Type': 'application/json',
+						"Content-Type": "application/json",
 					},
 					body: JSON.stringify({
 						eventId: selectedContract.eventId,
@@ -351,18 +340,21 @@ const PlannerContract = () => {
 			);
 
 			if (!response.ok) {
-				throw new Error(`Failed to finalize contract: ${response.status}`);
+				throw new Error(
+					`Failed to finalize contract: ${response.status}`
+				);
 			}
 
 			const result = await response.json();
 
+			// Confirm services
 			await fetch(
-				`${API_BASE}/planner/contracts/${selectedContract.id}/confirm-services`,
+				`${BASE_URL}/planner/contracts/${selectedContract.id}/confirm-services`,
 				{
-					method: 'POST',
+					method: "POST",
 					headers: {
 						Authorization: `Bearer ${token}`,
-						'Content-Type': 'application/json',
+						"Content-Type": "application/json",
 					},
 					body: JSON.stringify({
 						eventId: selectedContract.eventId,
@@ -371,33 +363,39 @@ const PlannerContract = () => {
 				}
 			);
 
+			// Generate and download signature details document with BOTH vendor and client signatures
 			setSaveStatus("Generating signature certificate...");
 
+			// FIXED: Extract vendor signature from selectedContract
+			// The vendor signature is stored in the contract when the vendor signs it
 			const vendorSignature = selectedContract.vendorSignature || null;
 
-			console.log('Vendor signature data:', vendorSignature);
+			console.log('Vendor signature data:', vendorSignature); // Debug log
 
 			const signatureDoc = createSignatureDetailsDocument(
 				selectedContract,
 				signatureDataParam,
 				signerInfo,
-				vendorSignature
+				vendorSignature // Pass the vendor signature here
 			);
 
+			// Auto-download the signature details HTML file
 			signatureDoc.download();
 
+			// Show success message with instructions
 			setTimeout(() => {
 				alert(
 					`Successfully signed!\n\n` +
-					`A signature details document has been downloaded.\n` +
-					`You can print it to PDF and attach it to the contract:\n\n` +
-					`1. Open the downloaded HTML file\n` +
-					`2. Press Ctrl+P (or Cmd+P on Mac)\n` +
-					`3. Select "Save as PDF"\n` +
-					`4. Attach it to the original contract`
+						`A signature details document has been downloaded.\n` +
+						`You can print it to PDF and attach it to the contract:\n\n` +
+						`1. Open the downloaded HTML file\n` +
+						`2. Press Ctrl+P (or Cmd+P on Mac)\n` +
+						`3. Select "Save as PDF"\n` +
+						`4. Attach it to the original contract`
 				);
 			}, 500);
 
+			// Update contracts list
 			setContracts((prev) =>
 				prev.map((c) =>
 					c.id === selectedContract.id
@@ -411,6 +409,7 @@ const PlannerContract = () => {
 			setSignatureData({});
 			setSaveStatus("");
 
+			// Refresh contracts
 			await fetchContracts();
 		} catch (err) {
 			console.error("Error finalizing contract:", err);
@@ -436,15 +435,19 @@ const PlannerContract = () => {
 			try {
 				const token = await getAuthToken();
 				const response = await fetch(
-					`${API_BASE}/planner/contracts/${contractId}?eventId=${eventId}&vendorId=${vendorId}&contractUrl=${encodeURIComponent(contractUrl)}`,
+					`${BASE_URL}/planner/contracts/${contractId}?eventId=${eventId}&vendorId=${vendorId}&contractUrl=${encodeURIComponent(
+						contractUrl
+					)}`,
 					{
-						method: 'DELETE',
+						method: "DELETE",
 						headers: { Authorization: `Bearer ${token}` },
 					}
 				);
 
 				if (!response.ok) {
-					throw new Error(`Failed to delete contract: ${response.status}`);
+					throw new Error(
+						`Failed to delete contract: ${response.status}`
+					);
 				}
 
 				setContracts((prev) => prev.filter((c) => c.id !== contractId));
@@ -460,6 +463,53 @@ const PlannerContract = () => {
 		[]
 	);
 
+	const isContractSignedByClient = useCallback((contract) => {
+		if (
+			!contract.signatureFields ||
+			contract.signatureFields.length === 0
+		) {
+			return false;
+		}
+
+		const clientFields = contract.signatureFields.filter(
+			(field) => field.signerRole === "client"
+		);
+
+		if (clientFields.length === 0) {
+			return false;
+		}
+
+		const allClientFieldsSigned = clientFields.every(
+			(field) => field.signed === true
+		);
+
+		const workflowCompleted =
+			contract.signatureWorkflow?.workflowStatus === "completed";
+
+		return allClientFieldsSigned && workflowCompleted;
+	}, []);
+
+	const getContractStatusDisplay = useCallback((contract) => {
+			if (!contract.signatureWorkflow?.isElectronic) {
+				return { text: "Active", class: "active" };
+			}
+	
+			const status = contract.signatureWorkflow.workflowStatus;
+	
+			switch (status) {
+				case "draft":
+					return { text: "Draft", class: "draft" };
+				case "sent":
+					return { text: "Pending Signature", class: "pending" };
+				case "partially_signed":
+					return { text: "Partially Signed", class: "partial" };
+				case "completed":
+					return { text: "Signed", class: "completed" };
+				default:
+					return { text: "Active", class: "active" };
+			}
+		}, []);
+	
 	const loadDraftSignatures = useCallback((contract) => {
 		if (contract.signatureFields) {
 			const draftData = {};
@@ -472,47 +522,6 @@ const PlannerContract = () => {
 		}
 	}, []);
 
-	const isContractSignedByClient = useCallback((contract) => {
-		if (!contract.signatureFields || contract.signatureFields.length === 0) {
-			return false;
-		}
-
-		const clientFields = contract.signatureFields.filter(
-			field => field.signerRole === 'client'
-		);
-
-		if (clientFields.length === 0) {
-			return false;
-		}
-
-		const allClientFieldsSigned = clientFields.every(field => field.signed === true);
-
-		const workflowCompleted = contract.signatureWorkflow?.workflowStatus === 'completed';
-
-		return allClientFieldsSigned && workflowCompleted;
-	}, []);
-
-	const getContractStatusDisplay = useCallback((contract) => {
-		if (!contract.signatureWorkflow?.isElectronic) {
-			return { text: 'Active', class: 'active' };
-		}
-
-		const status = contract.signatureWorkflow.workflowStatus;
-
-		switch (status) {
-			case 'draft':
-				return { text: 'Draft', class: 'draft' };
-			case 'sent':
-				return { text: 'Pending Signature', class: 'pending' };
-			case 'partially_signed':
-				return { text: 'Partially Signed', class: 'partial' };
-			case 'completed':
-				return { text: 'Signed', class: 'completed' };
-			default:
-				return { text: 'Active', class: 'active' };
-		}
-	}, []);
-
 	const groupedContracts = useMemo(() => {
 		const groups = {};
 		contracts.forEach((contract) => {
@@ -520,7 +529,7 @@ const PlannerContract = () => {
 				groups[contract.eventId] = {
 					eventName: contract.eventName,
 					eventDate: contract.eventDate,
-					contracts: []
+					contracts: [],
 				};
 			}
 			groups[contract.eventId].contracts.push(contract);
@@ -539,11 +548,12 @@ const PlannerContract = () => {
 
 	const totalContracts = contracts.length;
 	const pendingContracts = contracts.filter(
-		(c) => c.signatureWorkflow?.workflowStatus === "sent" || 
-		       c.signatureWorkflow?.workflowStatus === "partially_signed"
+		(c) =>
+			c.signatureWorkflow?.workflowStatus === "sent" ||
+			c.signatureWorkflow?.workflowStatus === "partially_signed"
 	).length;
-	const signedContracts = contracts.filter(
-		(c) => isContractSignedByClient(c)
+	const signedContracts = contracts.filter((c) =>
+		isContractSignedByClient(c)
 	).length;
 
 	const handleDownloadContract = (contractUrl, fileName) => {
@@ -554,108 +564,6 @@ const PlannerContract = () => {
 		link.click();
 		document.body.removeChild(link);
 	};
-
-	const EventCard = React.memo(({ eventId, eventData }) => {
-		return (
-			<article className="event-card">
-				<section className="event-info">
-					<p>
-						<FileText size={16} /> {eventData.eventName}
-					</p>
-					<p>
-						<Calendar size={16} /> {eventData.eventDate
-							? formatDate(eventData.eventDate)
-							: "No date"}
-					</p>
-				</section>
-				<section className="contracts-list">
-					{eventData.contracts.length === 0 ? (
-						<p>No contracts for this event.</p>
-					) : (
-						eventData.contracts.map((contract) => {
-							const isSigned = isContractSignedByClient(contract);
-							const statusDisplay = getContractStatusDisplay(contract);
-							
-							return (
-								<article key={contract.id} className="contract-item">
-									<section className="contract-details">
-										<section className="contract-name-row">
-											<button
-												className="file-name-btn"
-												onClick={() => {
-													setSelectedContract(contract);
-													loadDraftSignatures(contract);
-													setShowSignModal(true);
-												}}
-												title="View and sign contract"
-											>
-												{contract.fileName}
-											</button>
-										</section>
-										<section className="contract-meta">
-											<span className="last-edited">
-												Last edited: {contract.lastedited?.seconds
-													? new Date(
-															contract.lastedited.seconds * 1000
-													  ).toLocaleDateString()
-													: "Unknown"}
-											</span>
-											<span className={`status-badge status-${statusDisplay.class}`}>
-												{statusDisplay.text}
-											</span>
-										</section>
-									</section>
-									<section className="contract-actions">
-										<button
-											className="btn-sign"
-											onClick={() => {
-												setSelectedContract(contract);
-												loadDraftSignatures(contract);
-												setShowSignModal(true);
-											}}
-											title={isSigned ? "Contract already signed" : "Sign contract"}
-											disabled={isSigned}
-										>
-											<Edit3 size={14} />
-											{isSigned ? "Signed" : "Sign"}
-										</button>
-										<button
-											className="btn-download"
-											onClick={() =>
-												handleDownloadContract(
-													contract.contractUrl,
-													contract.fileName
-												)
-											}
-											title="Download contract"
-										>
-											<Download size={14} />
-											Download
-										</button>
-										<button
-											className="btn-delete"
-											onClick={() =>
-												deleteContract(
-													contract.eventId,
-													contract.id,
-													contract.contractUrl,
-													contract.vendorId
-												)
-											}
-											title="Delete contract"
-										>
-											<Trash2 size={14} />
-											Delete
-										</button>
-									</section>
-								</article>
-							);
-						})
-					)}
-				</section>
-			</article>
-		);
-	});
 
 	if (loading) {
 		return (
@@ -672,12 +580,10 @@ const PlannerContract = () => {
 
 	if (contracts.length === 0) {
 		return (
-			<section className="contracts-page">
-				<header className="contracts-header">
-					<section className="header-left">
-						<h1 className="contracts-title">Contract Management</h1>
-						<p className="contracts-subtitle">Manage your vendor contracts!</p>
-					</section>
+			<section className="events-page">
+				<header>
+					<h1>Contract Management</h1>
+					<p>Manage vendor contracts for your events.</p>
 				</header>
 				<p className="no-events">No contracts found.</p>
 			</section>
@@ -685,20 +591,30 @@ const PlannerContract = () => {
 	}
 
 	return (
-		<section className="contracts-page">
-			<header className="contracts-header">
-				<section className="header-left">
-					<h1 className="contracts-title">Contract Management</h1>
-					<p className="contracts-subtitle">Manage your vendor contracts!</p>
+		<section className="contracts-page-planner-contract">
+			<header>
+				<h1>Contract Management</h1>
+				<p>Manage vendor contracts for your events.</p>
+				<section className="stats-summary">
+					<section className="stat-item-planner-contract">
+						<FileText size={20} />
+						<span>Total Contracts: {totalContracts}</span>
+					</section>
+					<section className="stat-item-planner-contract pending-stat-planner-contract">
+						<span>Pending Signatures: {pendingContracts}</span>
+					</section>
+					<section className="stat-item-planner-contract signed-stat-planner-contract">
+						<span>Signed Contracts: {signedContracts}</span>
+					</section>
 				</section>
-				<section className="search-container">
+				<section className="search-container-planner-contract">
 					<Search size={20} />
 					<input
 						type="text"
 						placeholder="Search by event name..."
 						value={searchTerm}
 						onChange={(e) => setSearchTerm(e.target.value)}
-						className="search-input"
+						className="search-input-planner-contract"
 					/>
 					{searchTerm && (
 						<button
@@ -710,68 +626,35 @@ const PlannerContract = () => {
 					)}
 				</section>
 			</header>
-
-			<section className="summary-grid">
-				<article className="summary-card">
-					<section className="summary-card-header">
-						<section className="summary-icon blue">
-							<FileText size={24} />
-						</section>
-					</section>
-					<p className="summary-label">Total Contracts</p>
-					<h2 className="summary-value">{totalContracts}</h2>
-					<p className="summary-subtext">Active contracts</p>
-				</article>
-
-				<article className="summary-card">
-					<section className="summary-card-header">
-						<section className="summary-icon yellow">
-							<Clock size={24} />
-						</section>
-					</section>
-					<p className="summary-label">Pending Signatures</p>
-					<h2 className="summary-value">{pendingContracts}</h2>
-					<p className="summary-subtext">Awaiting your signature</p>
-				</article>
-
-				<article className="summary-card">
-					<section className="summary-card-header">
-						<section className="summary-icon green">
-							<CheckCircle size={24} />
-						</section>
-					</section>
-					<p className="summary-label">Signed Contracts</p>
-					<h2 className="summary-value">{signedContracts}</h2>
-					<p className="summary-subtext">Completed contracts</p>
-				</article>
-			</section>
-
-			<section className="events-section">
-				<section className="section-header">
-					<h2 className="section-title">
-						<Calendar size={20} />
-						Your Events ({filteredEventIds.length})
-					</h2>
-				</section>
-				<section className="section-content">
-					<section className="events-list">
-						{filteredEventIds.map((eventId) => (
-							<EventCard
-								key={eventId}
-								eventId={eventId}
-								eventData={groupedContracts[eventId]}
-							/>
-						))}
-					</section>
+			<section className="events-section-planner-contract">
+				<h2 className="section-title-planner-contract">
+					<Calendar size={20} />
+					Your Events ({filteredEventIds.length})
+				</h2>
+				<section className="events-list-planner-contract">
+					{filteredEventIds.map((eventId) => (
+						<EventCard
+							key={eventId}
+							eventId={eventId}
+							eventData={groupedContracts[eventId]}
+							setSelectedContract={setSelectedContract}
+							setShowSignModal={setShowSignModal}
+							setSignatureData={setSignatureData}
+							handleDownloadContract={handleDownloadContract}
+							deleteContract={deleteContract}
+							getContractStatusDisplay={getContractStatusDisplay}
+							isContractSignedByClient={isContractSignedByClient}
+							loadDraftSignatures={loadDraftSignatures}
+						/>
+					))}
 				</section>
 			</section>
-
 			{debouncedSearchTerm && filteredEventIds.length === 0 && (
 				<section className="no-results">
 					<p>No events found matching "{debouncedSearchTerm}"</p>
 				</section>
 			)}
-			
+
 			<Popup
 				isOpen={showSignModal}
 				onClose={() => {
@@ -797,9 +680,7 @@ const PlannerContract = () => {
 			</Popup>
 
 			{saveStatus && (
-				<section className="toast-notification">
-					{saveStatus}
-				</section>
+				<div className="toast-notification">{saveStatus}</div>
 			)}
 		</section>
 	);
