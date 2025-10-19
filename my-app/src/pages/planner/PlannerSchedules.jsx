@@ -957,20 +957,12 @@ export default function PlannerSchedules({ event: initialEvent }) {
 																			schedule
 																			PDF:
 																		</p>
-																		<a
-																			href={
-																				schedule.url
-																			}
+																		<a href={schedule.url}
 																			target="_blank"
 																			rel="noopener noreferrer"
 																			className="ps-pdf-link"
 																		>
-																			<ExternalLink className="ps-icon" />
-																			Open
-																			PDF
-																			Schedule:{" "}
-																			{schedule.scheduleTitle ||
-																				"Schedule Document"}
+																			<ExternalLink className="ps-icon" /> Open PDF Schedule:{" "}{schedule.scheduleTitle || "Schedule Document"}
 																		</a>
 																	</section>
 																</section>
