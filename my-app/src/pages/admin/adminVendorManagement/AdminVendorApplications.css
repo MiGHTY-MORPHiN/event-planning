@@ -28,9 +28,9 @@
 
 /* (You can reuse the profile pic and other styles from previous steps) */
 .vendor-profile-pic {
-  margin-left: 12.5%;
-  margin-right: 12.5%;
-  width: 75%;
+  margin-left: 30%;
+  margin-right: 30%;
+  width: 40%;
   aspect-ratio: 1;
   border-radius: 50%;
   object-fit: cover;

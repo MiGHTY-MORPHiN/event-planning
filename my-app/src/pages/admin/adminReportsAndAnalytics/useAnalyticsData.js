@@ -5,7 +5,7 @@ import BASE_URL from "../../../apiConfig";
 const getToken = () =>
     auth.currentUser
         ? auth.currentUser.getIdToken()
-        : Promise.reject("Not logged in");
+        : Promise.reject(new Error("Not logged in"));
 
 export const useAnalyticsData = () => {
     const [platformSummary, setPlatformSummary] = useState(null);
@@ -17,27 +17,59 @@ export const useAnalyticsData = () => {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        const fetchOnTheFlyReports = async () => {
+        const fetchAllAnalytics = async () => {
+            setIsLoading(true);
+            setError(null);
             try {
                 const token = await getToken();
-                const [summaryRes, eventsRes] = await Promise.all([
+
+                // Fetch all required data in parallel
+                const [summaryRes, eventsRes, plannersRes] = await Promise.all([
                     fetch(`${BASE_URL}/admin/analytics/platform-summary`, {
                         headers: { Authorization: `Bearer ${token}` },
                     }),
                     fetch(`${BASE_URL}/admin/events`, {
                         headers: { Authorization: `Bearer ${token}` },
                     }),
+                    fetch(`${BASE_URL}/admin/planners`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                    }),
                 ]);
 
-                if (!summaryRes.ok) throw new Error(`Failed to fetch summary: ${summaryRes.statusText}`);
-                if (!eventsRes.ok) throw new Error(`Failed to fetch events: ${eventsRes.statusText}`);
+                if (!summaryRes.ok) throw new Error(`Failed to fetch platform summary`);
+                if (!eventsRes.ok) throw new Error(`Failed to fetch events`);
+                if (!plannersRes.ok) throw new Error(`Failed to fetch planners`);
 
                 const summaryData = await summaryRes.json();
                 const eventsData = await eventsRes.json();
-                const allEvents = eventsData.events || [];
+                const plannersData = await plannersRes.json();
 
-                setPlatformSummary(summaryData);
+                const allEvents = Array.isArray(eventsData.events) ? eventsData.events : [];
+                const allPlanners = Array.isArray(plannersData) ? plannersData : [];
 
+                // --- Frontend Calculation for Avg Events/Planner ---
+                const totalEvents = allEvents.length;
+                const totalPlanners = allPlanners.length;
+                const avgEventsPerPlanner = totalPlanners > 0 ? totalEvents / totalPlanners : 0;
+                
+                // --- Merge calculated value into the summary data ---
+                const updatedSummary = {
+                    ...summaryData,
+                    plannerInsights: {
+                        ...summaryData.plannerInsights,
+                        avgEventsPerPlanner: avgEventsPerPlanner,
+                    },
+                    // Also ensure totals are correct
+                    totals: {
+                        ...summaryData.totals,
+                        events: totalEvents,
+                        planners: totalPlanners,
+                    }
+                };
+                
+                setPlatformSummary(updatedSummary);
+                
+                // --- Process other chart data ---
                 if (summaryData.vendorInsights?.popularCategories) {
                     setVendorCategoryData(summaryData.vendorInsights.popularCategories.slice(0, 8));
                 }
@@ -45,6 +77,7 @@ export const useAnalyticsData = () => {
                     setEventCategoryData(summaryData.eventInsights.categoryPopularity.slice(0, 8));
                 }
 
+                // Process financials (remains the same)
                 const today = new Date();
                 const allEventDates = allEvents.map((e) => new Date(e.date)).filter((d) => !isNaN(d.getTime()));
                 const minDate = allEventDates.length > 0 ? new Date(Math.min(...allEventDates)) : new Date(today.getFullYear() - 1, today.getMonth(), 1);
@@ -73,13 +106,23 @@ export const useAnalyticsData = () => {
                 setNewEventsData(sortedFinancials.map(({ month, newEvents }) => ({ month, newEvents })));
 
             } catch (err) {
-                console.error("Error fetching reports:", err);
+                console.error("Error fetching analytics:", err);
                 setError(err.message);
             } finally {
                 setIsLoading(false);
             }
         };
-        fetchOnTheFlyReports();
+        
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+            if (user) {
+                fetchAllAnalytics();
+            } else {
+                setError("User is not authenticated.");
+                setIsLoading(false);
+            }
+        });
+
+        return () => unsubscribe();
     }, []);
 
     return { platformSummary, monthlyFinancials, newEventsData, vendorCategoryData, eventCategoryData, isLoading, error };
