@@ -63,6 +63,7 @@ const VendorDashboardHTML = ({
         </div>
       </div>
 
+
       {/* Summary Cards */}
       <div className="summary-grid">
         <div className="summary-card blue">

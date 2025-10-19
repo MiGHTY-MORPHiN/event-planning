@@ -2,10 +2,43 @@ import { useState, useEffect } from "react";
 import "../../planner/PlannerAllEvents.css";
 import { getAuth } from "firebase/auth";
 
+function getEventStatus(eventDate) {
+  if (!eventDate) return "unknown";
+  
+  let date;
+  // Handle Firebase timestamp
+  if (typeof eventDate === 'object' && eventDate._seconds) {
+    date = new Date(eventDate._seconds * 1000 + (eventDate._nanoseconds || 0) / 1e6);
+  } else if (eventDate instanceof Date) {
+    date = eventDate;
+  } else {
+    date = new Date(eventDate);
+  }
+
+  const now = new Date();
+  const oneDayBefore = new Date(date);
+  oneDayBefore.setDate(oneDayBefore.getDate() - 1);
+  
+  const eventEnd = new Date(date);
+  eventEnd.setHours(eventEnd.getHours() + (24)); 
+
+  if (isNaN(date)) return "unknown";
+  
+  if (now < oneDayBefore) {
+    return "upcoming";
+  } else if (now >= oneDayBefore && now <= eventEnd) {
+    return "in-progress";
+  } else {
+    return "completed";
+  }
+}
+
 function EventCard({ event, onQuickView, onDeleteEvent }) {
 	function formatDate(dateString) {
   if (!dateString) return "";
 
+
+  
   let jsDate;
 
   if (typeof dateString === 'object' && typeof dateString._seconds === 'number') {
@@ -30,7 +63,8 @@ function EventCard({ event, onQuickView, onDeleteEvent }) {
 }
 
 
-	const getStatusColor = (status) => {
+	const getStatusColor = (eventDate) => {
+		const status = getEventStatus(eventDate);
 		switch (status) {
 			case "upcoming":
 				return "#10b981";
@@ -49,9 +83,9 @@ function EventCard({ event, onQuickView, onDeleteEvent }) {
 				<h3>{event.name}</h3>
 				<section
 					className="event-status"
-					style={{ backgroundColor: getStatusColor(event.status) }}
+					style={{ backgroundColor: getStatusColor(event.date) }}
 				>
-					{event.status}
+					{getEventStatus(event.date)}
 				</section>
 			</section>
 			<section className="event-details">
@@ -154,7 +188,7 @@ export default function AdminAllEvents({ setActivePage, setSelectedEvent }) {
 			(event) =>
 				(event.name.toLowerCase().includes(search.toLowerCase()) ||
 					event.location.toLowerCase().includes(search.toLowerCase())) &&
-				(statusFilter === "All" || event.status === statusFilter)
+				(statusFilter === "All" || getEventStatus(event.date) === statusFilter)
 		)
 		.sort((a, b) => {
 			switch (sortBy) {
