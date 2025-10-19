@@ -110,6 +110,8 @@ describe("VendorFloorplan Component", () => {
   // Wait for re-render
   await screen.findByText(/Wedding/i);
 
+
+  
   const firstEventName = screen.getAllByRole("heading", { level: 3 })[0];
   expect(firstEventName.textContent).toBe("Conference"); 
 });

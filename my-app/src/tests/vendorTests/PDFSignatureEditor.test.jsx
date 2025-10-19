@@ -83,6 +83,9 @@ describe("PDFSignatureEditor", () => {
       />
     );
 
+
+    
+
     const [addButton] = screen.getAllByRole("button", { name: /Signature/i });
     fireEvent.click(addButton);
 

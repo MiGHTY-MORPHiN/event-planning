@@ -286,6 +286,8 @@ const VendorDashboard = ({ setActivePage }) => {
   const fetchAnalytics = useCallback(async () => {
     if (!vendorId) return null;
 
+
+    
     try {
       const token = await auth.currentUser.getIdToken();
       const result = await fetchWithCache(

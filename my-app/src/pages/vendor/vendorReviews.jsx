@@ -66,6 +66,7 @@ const VendorReviews = () => {
     const timestamp = review.timeOfReview || review.createdAt || review.date;
     if (!timestamp) return new Date(0);
     
+    
     try {
       if (timestamp.toDate && typeof timestamp.toDate === "function") return timestamp.toDate();
       else if (timestamp._seconds && timestamp._nanoseconds)

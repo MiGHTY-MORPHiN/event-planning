@@ -37,6 +37,8 @@ function EventCard({ event, onQuickView, onDeleteEvent }) {
 	function formatDate(dateString) {
   if (!dateString) return "";
 
+
+  
   let jsDate;
 
   if (typeof dateString === 'object' && typeof dateString._seconds === 'number') {

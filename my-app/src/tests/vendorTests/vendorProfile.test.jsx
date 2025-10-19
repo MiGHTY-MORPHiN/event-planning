@@ -103,6 +103,8 @@ describe('VendorProfile', () => {
     });
   });
 
+ 
+  
   
 
   it('navigates to edit profile', async () => {

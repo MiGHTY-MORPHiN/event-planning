@@ -26,6 +26,8 @@ describe("VendorApply Rendering", () => {
     expect(screen.getByLabelText(/Profile Picture/i)).toBeInTheDocument();
   });
 
+
+  
   it("renders category options in datalist", () => {
     render(<VendorApply />);
     const datalist = document.querySelector("#vendor-categories");

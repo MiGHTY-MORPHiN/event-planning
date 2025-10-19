@@ -378,6 +378,7 @@ const VendorBooking = ({ setActivePage }) => {
                 <Upload size={16} /> {booking.contractUploaded ? "View Contract" : "Upload Contract"}
               </button>
 
+
               <button
                 className={`accept-booking-btn ${!booking.contractUploaded ? "disabled" : ""}`}
                 onClick={() => handleAcceptBooking(booking)}

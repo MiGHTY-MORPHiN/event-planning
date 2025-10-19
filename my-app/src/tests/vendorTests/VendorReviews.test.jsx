@@ -16,6 +16,8 @@ vi.mock("firebase/auth", () => {
   };
 });
 
+
+
 // ✅ Mock firebase import
 vi.mock("../../firebase", () => {
   const mockAuth = {
