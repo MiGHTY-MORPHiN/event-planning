@@ -75,7 +75,10 @@ const AdminReports = () => {
 		setIsPopupOpen(true);
 	};
 
-	if (isLoading) return <LoadingSpinner text="Loading analytics..." />;
+	if (isLoading)
+		return (
+			<LoadingSpinner text="Crunching the latest data, just for you. Hang tight..." />
+		);
 
 	if (error)
 		return (

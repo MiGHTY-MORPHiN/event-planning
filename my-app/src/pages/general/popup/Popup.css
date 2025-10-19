@@ -36,8 +36,7 @@
 }
 
 .popup-content{
-    max-width: none;
-    width: 95vw;
+    max-width: 95vw;
     max-height: 95vh;
     background: var(--popup-content-bg);
     border-radius: 8px;

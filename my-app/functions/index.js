@@ -1144,10 +1144,6 @@ app.get("/planner/event-status-update", authenticate, async (req, res) => {
       const event = doc.data();
       const endTime = event.date.toDate ? event.date.toDate() : new Date(event.date);
 
-      if (now > endTime) {
-        batch.update(doc.ref, { status: "passed" });
-        console.log(`Event ${doc.id} marked as passed`);
-      }
     });
 
     await batch.commit();
@@ -2704,8 +2700,8 @@ app.delete('/admin/events/:eventId', async (req, res) => {
 });
 
 
-const publicRoutes = require("./publicRoutes.js")(db, bucket, EXTERNAL_API_KEY);
-app.use("/public", publicRoutes);
+//const publicRoutes = require("./publicRoutes.js")(db, bucket, EXTERNAL_API_KEY);
+//app.use("/public", publicRoutes);
 
 
 // =================================================================
@@ -2989,41 +2985,97 @@ app.post('/contracts/:contractId/signature-fields', authenticate, async (req, re
   }
 });
 
-/**
- * @route   GET /api/admin/vendors
- * @desc    Get a list of all vendors (approved, pending, etc.).
- * @access  Private (Admin Only)
- */
+//Get a list of all approved vendors with service count and average rating.
 app.get('/admin/vendors', authenticate, async (req, res) => {
-  try {
-    const snapshot = await db.collection('Vendor').get();
-    if (snapshot.empty) {
-      return res.json([]);
-    }
-    const vendors = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-    res.json(vendors);
-  } catch (err) {
-    console.error('Error fetching vendors:', err);
-    res.status(500).json({ message: 'Server error while fetching vendors' });
-  }
+	try {
+		const vendorSnapshot = await db.collection('Vendor').where('status', '==', 'approved').get();
+		if (vendorSnapshot.empty) {
+			return res.json([]);
+		}
+
+		const vendorsDataPromises = vendorSnapshot.docs.map(async (doc) => {
+			const vendor = {
+				id: doc.id,
+				...doc.data(),
+				serviceCount: 0, // Default service count
+				averageRating: null, // Default rating
+			};
+
+			// Fetch service count
+			const servicesSnapshot = await db
+				.collection('Vendor')
+				.doc(doc.id)
+				.collection('Services')
+				.get();
+			vendor.serviceCount = servicesSnapshot.size;
+
+			// Fetch average rating from Analytics
+			const analyticsDoc = await db
+				.collection('Analytics')
+				.doc(doc.id)
+				.get();
+			if (analyticsDoc.exists) {
+				vendor.averageRating = analyticsDoc.data().averageRating || null;
+			}
+
+			return vendor;
+		});
+
+		const vendors = await Promise.all(vendorsDataPromises);
+		res.json(vendors);
+
+	} catch (err) {
+		console.error('Error fetching vendors:', err);
+		res.status(500).json({ message: 'Server error while fetching vendors' });
+	}
 });
 
-// Get a list of all planners.
-app.get('/admin/planners', authenticate, async (req, res) => {
-  try {
-    const snapshot = await db.collection('Planner').get();
-    if (snapshot.empty) {
-      return res.json([]);
-    }
-    const planners = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    res.json(planners);
-  } catch (err) {
-    console.error('Error fetching planners:', err);
-    res.status(500).json({ message: 'Server error while fetching planners' });
-  }
+//Get a list of events a specific vendor has worked on.
+
+app.get('/admin/vendor/:vendorId/events', authenticate, async (req, res) => {
+	try {
+		const { vendorId } = req.params;
+		const eventsWorkedOn = [];
+		const eventMap = new Map(); // To avoid duplicate event entries
+
+		// Query all events
+		const allEventsSnapshot = await db.collection('Event').get();
+
+		for (const eventDoc of allEventsSnapshot.docs) {
+			// Check if this vendor provided a service for this event
+			const servicesSnapshot = await db
+				.collection('Event')
+				.doc(eventDoc.id)
+				.collection('Services')
+				.where('vendorId', '==', vendorId)
+				.limit(1) // We only need to know if they worked on it, not list all services here
+				.get();
+
+			if (!servicesSnapshot.empty && !eventMap.has(eventDoc.id)) {
+				const eventData = eventDoc.data();
+				eventsWorkedOn.push({
+					id: eventDoc.id,
+					name: eventData.name || 'Unnamed Event',
+					date: eventData.date, // Include date or other relevant info
+					status: eventData.status || 'unknown', // Include status
+				});
+				eventMap.set(eventDoc.id, true); // Mark event as added
+			}
+		}
+
+		// Sort events by date (optional, newest first)
+		eventsWorkedOn.sort((a, b) => {
+			const dateA = a.date?._seconds || new Date(a.date).getTime() / 1000;
+			const dateB = b.date?._seconds || new Date(b.date).getTime() / 1000;
+			return dateB - dateA;
+		});
+
+		res.json({ events: eventsWorkedOn });
+
+	} catch (err) {
+		console.error('Error fetching vendor events for admin:', err);
+		res.status(500).json({ message: 'Server error while fetching vendor events' });
+	}
 });
 
 // -------------------------
@@ -3058,6 +3110,28 @@ app.get('/:vendorId/:eventId/services-for-contract', authenticate, async (req, r
   }
 });
 
+//Get services offered by a specific vendor.
+app.get('/admin/vendor/:vendorId/services', authenticate, async (req, res) => {
+	try {
+		const { vendorId } = req.params;
+
+		const servicesSnapshot = await db
+			.collection('Vendor')
+			.doc(vendorId)
+			.collection('Services')
+			.get();
+
+		const services = servicesSnapshot.docs.map((doc) => ({
+			id: doc.id,
+			...doc.data(),
+		}));
+
+		res.status(200).json({ services });
+	} catch (error) {
+		console.error('Error fetching vendor services for admin:', error);
+		res.status(500).json({ error: 'Failed to fetch vendor services' });
+	}
+});
 
 // -------------------------
 // Update final prices when contract is uploaded
@@ -3277,47 +3351,80 @@ app.get('/:eventId/:vendorId/contract-prices-final', authenticate, async (req, r
   }
 });
 
-/**
- * @route   GET /api/admin/vendors
- * @desc    Get a list of all vendors (approved, pending, etc.).
- * @access  Private (Admin Only)
- */
-app.get('/admin/vendors', authenticate, async (req, res) => {
-  try {
-    const snapshot = await db.collection('Vendor').get();
-    if (snapshot.empty) {
-      return res.json([]);
-    }
-    const vendors = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
-    res.json(vendors);
-  } catch (err) {
-    console.error('Error fetching vendors:', err);
-    res.status(500).json({ message: 'Server error while fetching vendors' });
-  }
-});
-
-/**
- * @route   GET /api/admin/planners
- * @desc    Get a list of all planners.
- * @access  Private (Admin Only)
- */
+// Get a list of all planners with their event counts
 app.get('/admin/planners', authenticate, async (req, res) => {
   try {
-    const snapshot = await db.collection('Planner').get();
-    if (snapshot.empty) {
+    const plannerSnapshot = await db.collection('Planner').get();
+    if (plannerSnapshot.empty) {
       return res.json([]);
     }
-    const planners = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    res.json(planners);
+
+    // 1. Get all planners
+    const planners = plannerSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    // 2. Get ALL events to process in memory
+    const eventsSnapshot = await db.collection('Event').get();
+
+    const plannerStats = {}; // { plannerId: { activeEvents: 0, pastEvents: 0 } }
+
+    // 3. Initialize stats object for all planners
+    for (const planner of planners) {
+      // Use planner.id (which is the doc ID, same as planner.uid)
+      plannerStats[planner.id] = { activeEvents: 0, pastEvents: 0 };
+    }
+
+    // 4. Process all events and aggregate counts
+    eventsSnapshot.forEach(eventDoc => {
+      const event = eventDoc.data();
+      const plannerId = event.plannerId;
+
+      if (plannerStats[plannerId]) { // If this event belongs to a known planner
+        if (event.status === 'passed' || event.status ==='completed') {
+          plannerStats[plannerId].pastEvents++;
+        } else if (event.status === 'planning' || event.status === 'upcoming') {
+          // Assuming 'planning' and 'upcoming' are active
+          plannerStats[plannerId].activeEvents++;
+        }
+        // Events with other statuses (e.g., 'cancelled') are ignored
+      }
+    });
+
+    // 5. Combine planner data with the calculated stats
+    const finalPlannersData = planners.map(planner => ({
+      ...planner,
+      activeEvents: plannerStats[planner.id]?.activeEvents || 0,
+      eventHistoryCount: plannerStats[planner.id]?.pastEvents || 0 // Use a new field for the count
+    }));
+
+    res.json(finalPlannersData);
+
   } catch (err) {
     console.error('Error fetching planners:', err);
     res.status(500).json({ message: 'Server error while fetching planners' });
   }
 });
 
+// Get all events for a specific planner (for Admin)
+app.get('/admin/planner/:plannerId/events', authenticate, async (req, res) => {
+  try {
+    const { plannerId } = req.params;
+
+    const snapshot = await db.collection("Event")
+      .where("plannerId", "==", plannerId)
+      .get();
+
+    if (snapshot.empty) {
+      return res.json({ events: [] });
+    }
+
+    const events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    res.json({ events });
+
+  } catch (err) {
+    console.error('Error fetching planner events for admin:', err);
+    res.status(500).json({ message: 'Server error while fetching planner events' });
+  }
+});
 
 // GET /analytics/:vendorId
 app.get("/analytics/:vendorId", authenticate, async (req, res) => {
@@ -3818,37 +3925,102 @@ app.get('/public/analytics/platform-summary-debug', async (req, res) => {
   }
 });
 
+// GET /analytics/:vendorId - ENHANCED to include Event and Planner names in reviews
+app.get("/admin/vendor/:vendorId", authenticate, async (req, res) => {
+	const { vendorId } = req.params;
+	console.log(`Fetching enriched analytics for vendor: ${vendorId}`); // DEBUG LOG
 
-// GET /analytics/:vendorId
-app.get("/analytics/:vendorId", authenticate, async (req, res) => {
-  const { vendorId } = req.params;
+	try {
+		// Get Analytics doc (for average rating, total reviews etc.)
+		const analyticsRef = db.collection("Analytics").doc(vendorId);
+		const analyticsDoc = await analyticsRef.get();
 
-  try {
-    // Get Analytics doc
-    const analyticsRef = db.collection("Analytics").doc(vendorId);
-    const analyticsDoc = await analyticsRef.get();
+		let analyticsData = {};
+		if (analyticsDoc.exists) {
+			analyticsData = analyticsDoc.data();
+		} else {
+			console.log(`Analytics document not found for vendor ${vendorId}, providing defaults.`); // DEBUG LOG
+			analyticsData = { averageRating: null, totalReviews: 0 };
+		}
 
-    if (!analyticsDoc.exists) {
-      return res.status(404).json({ message: "Analytics not found" });
-    }
+		// --- Fetch Reviews from the top-level 'Reviews' collection ---
+		const reviewsSnapshot = await db.collection("Reviews")
+			.where('vendorId', '==', vendorId)
+			// .orderBy('createdAt', 'desc') // Temporarily comment out if createdAt doesn't exist yet
+			.get();
 
-    // Get Reviews subcollection
-    const reviewsSnapshot = await analyticsRef.collection("Reviews").get();
-    const reviews = reviewsSnapshot.docs.map((doc) => ({
-      id: doc.id, // ✅ include Firestore doc id
-      ...doc.data(),
-    }));
+		console.log(`Found ${reviewsSnapshot.size} reviews for vendor ${vendorId} in 'Reviews' collection.`); // DEBUG LOG
 
-    // Send combined response
-    res.json({
-      id: analyticsDoc.id,
-      ...analyticsDoc.data(),
-      reviews,
-    });
-  } catch (err) {
-    console.error("Error fetching analytics:", err);
-    res.status(500).json({ message: "Server error while fetching analytics" });
-  }
+		if (reviewsSnapshot.empty) {
+            // If no reviews, return analytics data with empty reviews array
+            return res.json({
+                id: vendorId,
+                ...analyticsData,
+                reviews: [],
+            });
+        }
+
+		const enrichedReviewsPromises = reviewsSnapshot.docs.map(async (reviewDoc) => {
+			const review = { id: reviewDoc.id, ...reviewDoc.data() };
+			let eventName = 'Event Not Specified'; // Default text
+			let plannerName = 'Planner Not Specified'; // Default text
+
+			// Fetch Event Name if eventId exists
+			if (review.eventId) {
+				// console.log(`Fetching event ${review.eventId} for review ${review.id}`); // DEBUG LOG
+				try {
+					const eventDoc = await db.collection('Event').doc(review.eventId).get();
+					if (eventDoc.exists) {
+						eventName = eventDoc.data().name || 'Unnamed Event';
+						// console.log(` -> Found event name: ${eventName}`); // DEBUG LOG
+					} else {
+                         console.log(` -> Event ${review.eventId} not found.`); // DEBUG LOG
+                         eventName = 'Event Not Found';
+                    }
+				} catch (e) { console.error(`Error fetching event ${review.eventId} for review ${review.id}:`, e); }
+			} else {
+                // console.log(`No eventId found for review ${review.id}`); // DEBUG LOG
+            }
+
+			// Fetch Planner Name if plannerId exists
+			if (review.plannerId) {
+                // console.log(`Fetching planner ${review.plannerId} for review ${review.id}`); // DEBUG LOG
+				try {
+					// Assuming plannerId is the UID, fetch from 'Planner' collection
+					const plannerDoc = await db.collection('Planner').doc(review.plannerId).get();
+					if (plannerDoc.exists) {
+						plannerName = plannerDoc.data().name || 'Unnamed Planner';
+						// console.log(` -> Found planner name: ${plannerName}`); // DEBUG LOG
+					} else {
+                         console.log(` -> Planner ${review.plannerId} not found.`); // DEBUG LOG
+                         plannerName = 'Planner Not Found';
+                    }
+				} catch (e) { console.error(`Error fetching planner ${review.plannerId} for review ${review.id}:`, e); }
+			} else {
+                // console.log(`No plannerId found for review ${review.id}`); // DEBUG LOG
+            }
+
+			return {
+				...review,
+				eventName: eventName,
+				plannerName: plannerName,
+			};
+		});
+
+		const reviews = await Promise.all(enrichedReviewsPromises);
+		console.log(`Enriched reviews data being sent:`, JSON.stringify(reviews, null, 2)); // DEBUG LOG
+
+		// Send combined response
+		res.json({
+			id: vendorId,
+			...analyticsData,
+			reviews, // Include the enriched reviews array
+		});
+
+	} catch (err) {
+		console.error("Error fetching enriched analytics:", err);
+		res.status(500).json({ message: "Server error while fetching analytics" });
+	}
 });
 
 // POST /analytics/:vendorId/reviews/:reviewId/reply
