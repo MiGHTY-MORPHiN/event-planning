@@ -70,11 +70,15 @@ app.use(cors({
   ],
 }));
 
+
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
+  windowMs: 15 * 60 * 1000, 
+  max: 500,                  
+  keyGenerator: (req) => req.uid || req.ip, 
+  standardHeaders: true,
+  legacyHeaders: false,      
 });
-//app.use(limiter);
+app.use(limiter);
 
 const upload = multer({ storage: multer.memoryStorage() });
 

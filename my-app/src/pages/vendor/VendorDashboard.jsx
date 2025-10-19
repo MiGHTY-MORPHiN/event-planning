@@ -205,20 +205,42 @@ const VendorDashboard = ({ setActivePage }) => {
   }, []);
 
   // Optimized date formatting
-  const formatEventDate = useCallback((dateString) => {
-    if (!dateString) return "Date not set";
+  const formatEventDate = useCallback((dateObj) => {
+    if (!dateObj) return "Date not set";
     
     try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
+      let jsDate;
+      
+      // Handle Firebase Timestamp format
+      if (dateObj._seconds && dateObj._nanoseconds !== undefined) {
+        jsDate = new Date(dateObj._seconds * 1000 + dateObj._nanoseconds / 1000000);
+      }
+      // Handle regular date string
+      else if (typeof dateObj === 'string') {
+        jsDate = new Date(dateObj);
+      }
+      // Handle Date object
+      else if (dateObj instanceof Date) {
+        jsDate = dateObj;
+      }
+      // Handle any other format
+      else {
         return "Date not set";
       }
-      
-      return date.toLocaleDateString('en-US', {
+
+      if (isNaN(jsDate.getTime())) {
+        return "Date not set";
+      }
+
+      return jsDate.toLocaleDateString('en-US', {
+        weekday: 'short',
         month: 'short',
-        day: 'numeric'
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
       });
     } catch (error) {
+      console.error('Date formatting error:', error);
       return "Date not set";
     }
   }, []);
@@ -264,6 +286,8 @@ const VendorDashboard = ({ setActivePage }) => {
   const fetchAnalytics = useCallback(async () => {
     if (!vendorId) return null;
 
+
+    
     try {
       const token = await auth.currentUser.getIdToken();
       const result = await fetchWithCache(

@@ -1,7 +1,7 @@
 import React from "react";
 import { Edit, Plus, X, Trash2, Phone, Mail, MapPin, Calendar, Award, Users, Star, CheckCircle, X as CloseIcon } from "lucide-react";
 
-const VendorProfileHTML = ({
+function VendorProfileHTML({
   // State props
   vendor,
   services,
@@ -28,9 +28,9 @@ const VendorProfileHTML = ({
   handleEditService,
   handleDeleteService,
   removePopupNotification
-}) => {
+}) {
   return (
-    <div className="vendor-profile">
+    <div className="vendor-profile" data-testid="vendor-profile">
       {/* Popup Notifications Container */}
       <div className="popup-notifications-container">
         {popupNotifications.map((notification) => (
@@ -151,8 +151,8 @@ const VendorProfileHTML = ({
           <div className="card-content">
             <div className="business-info">
               <div className="business-name-section">
-                <h2>{vendor.businessName || "Unnamed Business"}</h2>
-                <span className="category-badge">{vendor.category || "Uncategorized"}</span>
+                <h2 data-testid="vendor-name">{vendor.businessName || "Unnamed Business"}</h2>
+                <span className="category-badge" data-testid="vendor-category">{vendor.category || "Uncategorized"}</span>
               </div>
               
               <div className="profile-image-container">
@@ -179,7 +179,7 @@ const VendorProfileHTML = ({
             <div className="description-section">
               <h4>Description</h4>
               <div className="description-content">
-                <p>{vendor.description || "No description provided."}</p>
+                <p data-testid="vendor-description">{vendor.description || "No description provided."}</p>
               </div>
             </div>
           </div>
@@ -227,16 +227,16 @@ const VendorProfileHTML = ({
           </button>
         </div>
         <div className="card-content">
-          {services.length === 0 && <p>No services added yet.</p>}
+          {services.length === 0 && <p data-testid="no-services">No services added yet.</p>}
           {services.map((service, index) => (
-            <div key={service.id || `temp-${index}`} className="service-item">
+            <div key={service.id || `temp-${index}`} className="service-item" data-testid="service-item">
               <div>
-                <h4>{service.serviceName || "Unnamed Service"}</h4>
-                <p>Cost: R{service.cost || "N/A"}</p>
-                {service.chargeByHour && <p>Per Hour: R{service.chargeByHour}</p>}
-                {service.chargePerPerson && <p>Per Person: R{service.chargePerPerson}</p>}
-                {service.chargePerSquareMeter && <p>Per m²: R{service.chargePerSquareMeter}</p>}
-                {service.extraNotes && <p className="service-notes">Notes: {service.extraNotes}</p>}
+                <h4 data-testid="service-name">{service.serviceName || "Unnamed Service"}</h4>
+                <p data-testid="service-cost">Cost: R{service.cost || "N/A"}</p>
+                {service.chargeByHour && <p data-testid="service-hour">Per Hour: R{service.chargeByHour}</p>}
+                {service.chargePerPerson && <p data-testid="service-person">Per Person: R{service.chargePerPerson}</p>}
+                {service.chargePerSquareMeter && <p data-testid="service-meter">Per m²: R{service.chargePerSquareMeter}</p>}
+                {service.extraNotes && <p className="service-notes" data-testid="service-notes">Notes: {service.extraNotes}</p>}
                 {!service.id && (
                   <p className="error-text">Warning: This service is missing an ID and cannot be edited or deleted.</p>
                 )}

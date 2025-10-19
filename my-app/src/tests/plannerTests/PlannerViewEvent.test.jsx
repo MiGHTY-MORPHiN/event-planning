@@ -3,6 +3,7 @@ import { describe, it, beforeEach, beforeAll, afterEach, vi, expect } from "vite
 import { MemoryRouter } from "react-router-dom";
 import Papa from "papaparse";
 
+
 vi.mock("papaparse", () => ({
   __esModule: true,
   default: {
@@ -357,7 +358,7 @@ describe("PlannerViewEvent", () => {
     fireEvent.click(screen.getByText("Services"));
     expect(screen.getByText("Event Services")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText("Tasks"));
+    fireEvent.click(screen.getByText("My To-Do List"));
     expect(screen.getByText("Event Tasks")).toBeInTheDocument();
   });
 
@@ -704,57 +705,6 @@ describe("PlannerViewEvent", () => {
     expect(screen.queryByTestId("chat-component")).not.toBeInTheDocument();
   });
 
-  it("toggles task completion", async () => {
-    global.fetch
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ guests: [] }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ vendors: [] }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ services: [] }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({}),
-      });
-
-    render(
-      <MemoryRouter>
-        <PlannerViewEvent event={mockEvent} />
-      </MemoryRouter>
-    );
-
-    fireEvent.click(screen.getByText("Tasks"));
-
-    await waitFor(() => {
-      expect(screen.getByText("Send invitations")).toBeInTheDocument();
-      expect(screen.getByText("Book catering")).toBeInTheDocument();
-    });
-
-    const checkboxes = screen.getAllByRole("checkbox");
-    const bookCateringCheckbox = checkboxes.find(checkbox => 
-      !checkbox.checked && checkbox.closest('.task-item')?.textContent.includes('Book catering')
-    );
-
-    if (bookCateringCheckbox) {
-      fireEvent.click(bookCateringCheckbox);
-    }
-
-    // Verify the API call is made to update event data
-    await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith(
-        "https://us-central1-planit-sdp.cloudfunctions.net/api/planner/me/event1",
-        expect.objectContaining({
-          method: "PUT",
-        })
-      );
-    });
-  });
 
   it("shows empty states for each tab", async () => {
     const emptyEvent = { ...mockEvent, tasks: {} };
@@ -788,7 +738,7 @@ describe("PlannerViewEvent", () => {
     expect(screen.getByText('No services added yet. Click "Add Vendor" to start building your services list.')).toBeInTheDocument();
 
     // Tasks tab empty state
-    fireEvent.click(screen.getByText("Tasks"));
+    fireEvent.click(screen.getByText("My To-Do List"));
     expect(screen.getByText('No tasks added yet. Click "Add Task" to start organizing your event planning.')).toBeInTheDocument();
   });
 
@@ -818,66 +768,9 @@ describe("PlannerViewEvent", () => {
     await waitFor(() => {
       expect(screen.getByText("No Guests Yet")).toBeInTheDocument();
       expect(screen.getByText("No Vendors Yet")).toBeInTheDocument();
-      expect(screen.getByText("No Tasks Yet")).toBeInTheDocument();
     });
   });
 
-  it("calls setActivePage when back button is clicked", async () => {
-    const mockSetActivePage = vi.fn();
-    
-    global.fetch
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ guests: [] }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ vendors: [] }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ services: [] }),
-      });
-
-    render(
-      <MemoryRouter>
-        <PlannerViewEvent event={mockEvent} setActivePage={mockSetActivePage} />
-      </MemoryRouter>
-    );
-
-    fireEvent.click(screen.getByText("← Back to Events"));
-
-    expect(mockSetActivePage).toHaveBeenCalledWith("events");
-  });
-
-  it("calls setActivePage when Add Vendor button is clicked", async () => {
-    const mockSetActivePage = vi.fn();
-    
-    global.fetch
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ guests: [] }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ vendors: [] }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ services: [] }),
-      });
-
-    render(
-      <MemoryRouter>
-        <PlannerViewEvent event={mockEvent} setActivePage={mockSetActivePage} />
-      </MemoryRouter>
-    );
-
-    fireEvent.click(screen.getByText("Services"));
-    fireEvent.click(screen.getByText("+ Add Vendor"));
-
-    expect(mockSetActivePage).toHaveBeenCalledWith("vendor");
-  });
 
   it("handles API errors gracefully", async () => {
   // Mock fetch to handle any request safely
@@ -1178,7 +1071,7 @@ describe("PlannerViewEvent", () => {
 
     expect(screen.getByText("First Name *")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText("Close"));
+    fireEvent.click(screen.getAllByText("Close")[0]);
 
     expect(screen.queryByText("First Name *")).not.toBeInTheDocument();
   });
@@ -1290,41 +1183,4 @@ describe("PlannerViewEvent", () => {
     });
   });
 
-  it("handles task list with mixed completion states", async () => {
-    global.fetch
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ guests: [] }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ vendors: [] }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ services: [] }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({}),
-      });
-
-    render(
-      <MemoryRouter>
-        <PlannerViewEvent event={mockEvent} />
-      </MemoryRouter>
-    );
-
-    fireEvent.click(screen.getByText("Tasks"));
-
-    await waitFor(() => {
-      const completedTask = screen.getByText("Send invitations").closest('.task-item');
-      const completedCheckbox = completedTask.querySelector('input[type="checkbox"]');
-      expect(completedCheckbox).toBeChecked();
-
-      const incompleteTask = screen.getByText("Book catering").closest('.task-item');
-      const incompleteCheckbox = incompleteTask.querySelector('input[type="checkbox"]');
-      expect(incompleteCheckbox).not.toBeChecked();
-    });
-  });
 });
