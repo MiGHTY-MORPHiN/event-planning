@@ -9,6 +9,7 @@ export function useFloorplanHandlers({
   selectedId,
   setSelectedId,
   setIsDirty,
+  canvasSize, // ✅ now passed in
 }) {
   const dragRef = useRef({});
 
@@ -17,12 +18,11 @@ export function useFloorplanHandlers({
     const proto = ITEM_PROTOTYPES[key];
     const container = containerRef.current;
     if (!container) return;
-    const rect = container.getBoundingClientRect();
     const newItem = {
       id: `it-${crypto.randomUUID()}`,
       ...proto,
-      x: rect.width / 2,
-      y: rect.height / 2,
+      x: canvasSize.width / 2,
+      y: canvasSize.height / 2,
       rotation: 0,
     };
     setItems((prev) => [...prev, newItem]);
@@ -119,7 +119,7 @@ export function useFloorplanHandlers({
                 x: Math.max(
                   calculateBoundingHalf(it.w, it.h, it.rotation || 0, "w"),
                   Math.min(
-                    rect.width -
+                    canvasSize.width -
                       calculateBoundingHalf(it.w, it.h, it.rotation || 0, "w"),
                     mouseX - offsetX
                   )
@@ -127,7 +127,7 @@ export function useFloorplanHandlers({
                 y: Math.max(
                   calculateBoundingHalf(it.w, it.h, it.rotation || 0, "h"),
                   Math.min(
-                    rect.height -
+                    canvasSize.height -
                       calculateBoundingHalf(
                         it.w,
                         it.h,
@@ -179,10 +179,7 @@ export function useFloorplanHandlers({
   const onTouchStart = (e) => {
     if (e.touches.length !== 2) return;
     e.preventDefault();
-    const container = containerRef.current;
-    if (!container) return;
-    container.setPointerCapture(e.touches[0].identifier);
-    const rect = container.getBoundingClientRect();
+    const rect = containerRef.current.getBoundingClientRect();
     const touch1 = { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
     const touch2 = { x: e.touches[1].clientX - rect.left, y: e.touches[1].clientY - rect.top };
     const it = items.find((i) => i.id === selectedId);
@@ -214,9 +211,7 @@ export function useFloorplanHandlers({
     )
       return;
     e.preventDefault();
-    const container = containerRef.current;
-    if (!container) return;
-    const rect = container.getBoundingClientRect();
+    const rect = containerRef.current.getBoundingClientRect();
     const touch1 = { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
     const touch2 = { x: e.touches[1].clientX - rect.left, y: e.touches[1].clientY - rect.top };
     const dx = touch2.x - touch1.x;
