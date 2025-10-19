@@ -4,7 +4,7 @@ import {
 	getEventsForDay,
 	getTodayKey,
 	pad,
-} from "./dateUtils";
+} from "./dateUtils.js";
 import "./MonthView.css";
 
 // 1. Accept the new props: events, onEventClick, onDateClick

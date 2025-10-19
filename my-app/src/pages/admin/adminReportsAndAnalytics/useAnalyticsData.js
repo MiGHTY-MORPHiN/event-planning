@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { auth } from "../../../firebase";
-import BASE_URL from "../../../apiConfig";
+import BASE_URL from "../../../apiConfig.js";
 
 const getToken = () =>
     auth.currentUser

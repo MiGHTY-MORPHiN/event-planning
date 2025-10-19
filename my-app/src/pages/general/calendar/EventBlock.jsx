@@ -1,5 +1,5 @@
 import React from "react";
-import { minutesToDurationString } from "./dateUtils";
+import { minutesToDurationString } from "./dateUtils.js";
 import "./EventBlock.css";
 
 /**

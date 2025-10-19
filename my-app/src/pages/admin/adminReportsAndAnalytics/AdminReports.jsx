@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useAnalyticsData } from "./useAnalyticsData";
+import { useAnalyticsData } from "./useAnalyticsData.js";
 import { formatCurrency, formatNumber } from "./formatters";
 import AdminReportsKpiCard from "./AdminReportsKpiCard";
 import AdminReportsEventsDetailedCharts from "./AdminReportsEventsDetailedCharts";

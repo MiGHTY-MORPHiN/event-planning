@@ -8,7 +8,7 @@ import {
 	Tooltip,
 	ResponsiveContainer,
 } from "recharts";
-import { formatCurrency } from "./formatters";
+import { formatCurrency } from "./formatters.js";
 
 const AdminReportsFinancialDetailedCharts = ({
 	platformSummary,
