@@ -12,6 +12,8 @@ vi.mock("react-router-dom", () => ({
   useNavigate: () => navigateMock,
 }));
 
+
+
 // Mock Firebase auth
 vi.mock("../../firebase", () => ({
   auth: { currentUser: { getIdToken: vi.fn() } },

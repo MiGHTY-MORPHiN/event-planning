@@ -66,6 +66,7 @@ const VendorReviews = () => {
     const timestamp = review.timeOfReview || review.createdAt || review.date;
     if (!timestamp) return new Date(0);
     
+    
     try {
       if (timestamp.toDate && typeof timestamp.toDate === "function") return timestamp.toDate();
       else if (timestamp._seconds && timestamp._nanoseconds)
@@ -99,6 +100,13 @@ const VendorReviews = () => {
         const res = await fetch(`https://us-central1-planit-sdp.cloudfunctions.net/api/analytics/${vendorId}`, {
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         });
+
+        if (res.status === 404) {
+          setReviews([]);
+          setLoading(false);
+          return;
+        }
+
         if (!res.ok) throw new Error("Failed to fetch reviews");
 
         const data = await res.json();
@@ -353,7 +361,35 @@ const VendorReviews = () => {
 
   if (loading) return <div className="loading-screen"><div className="spinner"></div><p>Loading your reviews...</p></div>;
   if (error) return <p className="error">{error}</p>;
-  if (!reviews.length) return <p>No reviews found.</p>;
+
+  // Styled empty state for no reviews
+  if (!reviews.length) {
+    return (
+      <section className="vendor-reviews-page">
+        <div className="review-page-title">
+          <h2>Vendor Reviews</h2>
+          <p>Review, analyze, and respond to reviews about your services.</p>
+        </div>
+        <div className="no-reviews-container">
+          <div className="no-reviews-content">
+            <h3>No Reviews Yet</h3>
+            <p>
+              You haven't received any reviews yet. Reviews will appear here after clients rate your services.
+            </p>
+            <div className="no-reviews-tips">
+              <h4>Tips to get your first reviews:</h4>
+              <ul>
+                <li>Complete your first event booking</li>
+                <li>Provide excellent service to your clients</li>
+                <li>Follow up with clients after events</li>
+                <li>Encourage satisfied clients to leave reviews</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   const analytics = calculateAnalytics();
 
