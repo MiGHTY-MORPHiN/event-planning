@@ -73,7 +73,7 @@ app.use(cors({
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
-  max: 500,                  
+  max: 1000,                  
   keyGenerator: (req) => req.uid || req.ip, 
   standardHeaders: true,
   legacyHeaders: false,      
